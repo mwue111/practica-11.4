@@ -1,0 +1,131 @@
+# scripts de bash pasados a playbook
+---
+- name: Playbook para instalar WordPress como página principal
+  hosts: aws
+  become: yes
+
+  # Variables definidas en el playbook: vars. Si son de mysql, ¿qué nombre necesitan?
+  # vars_files:
+    # - vars/variables.yml
+
+  vars:
+    - wp_db_name: db_name
+    - wp_db_user: db_user
+    - wp_db_pass: db_pass
+  
+  tasks:
+
+    - name: Obtención del código fuente de WordPress
+      get_url:
+        url: https://wordpress.org/wordpress-6.1.zip
+        dest: /tmp/wordpress.zip
+      # wget https://wordpress.org/wordpress-6.1.zip --output-document /tmp/wordpress.zip
+    
+    - name: Actualizar los repositorios
+      apt:
+        update_cache: yes
+      # apt update 
+
+    - name: Instalar la herramienta unzip
+      apt:
+        name: unzip
+        state: present
+      # apt install unzip -y
+    
+    - name: Eliminar instalaciones previas
+      file:
+        path: /tmp/wordpress
+        state: absent
+      # rm -rf /tmp/wordpress 
+
+    - name: Descomprimir el archivo de WordPress
+      unarchive:
+        src: /tmp/wordpress.zip
+        dest: /tmp/
+        remote_src: yes
+      # unzip /tmp/wordpress.zip -d /tmp
+
+    - name: Mover el código fuente al directorio de apache
+      copy:
+        src: /tmp/wordpress/*
+        dest: /var/www/html/wordpress
+        remote_src: yes
+      # mv /tmp/wordpress/* /var/www/html
+
+    - name: Eliminar el archivo wordpress.zip
+      file:
+        path: /tmp/wordpress.zip
+        state: absent
+      # rm -rf /tmp/wordpress.zip
+
+    - name: Instalación del gestor de paquetes de Python pip3
+      apt:
+        name: python3-pip
+        state: present
+    
+    - name: Instalación del módulo de pymysql
+      pip:
+        name: pymysql
+        state: present
+
+    - name: Crear la base de datos
+      mysql_db:
+        name: "{{ wp_db_name }}"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      # mysql -u root <<< "DROP DATABASE IF EXISTS $DB_NAME;"
+      # mysql -u root <<< "CREATE DATABASE IF NOT EXISTS $DB_NAME;"
+
+    - name: Crear un usuario
+      no_log: true
+      mysql_user:
+        name: "{{ wp_db_user }}"
+        password: "{{ wp_db_pass }}"
+        priv: "{{ wp_db_name }}.*:ALL"
+        host: "%"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      # mysql -u root <<< "DROP USER IF EXISTS $DB_USER@'%';"
+      # mysql -u root <<< "CREATE USER $DB_USER@'%' IDENTIFIED BY '$DB_PASS';"
+      # mysql -u root <<< "GRANT ALL PRIVILEGES ON $DB_NAME.* TO $DB_USER@'%';"
+      # mysql -u root <<< "FLUSH PRIVILEGES;"
+
+    - name: Localizar y renombrar archivos de configuración
+      shell: cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
+      # cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
+
+    - name: Editar el nombre de la base de datos en el archivo de configuración
+      replace:
+        path: /var/www/html/wp-config.php
+        regexp: "database_name_here"
+        replace: "{{ wp_db_name }}"
+
+      # sed -i "s/database_name_here/$DB_NAME/" /var/www/html/wp-config.php
+    
+    - name: Editar el usuario de la base de datos en el archivo de configuración
+      replace: 
+        path: /var/www/html/wp-config.php
+        regexp: "username_here"
+        replace: "{{ wp_db_user }}"
+      # sed -i "s/username_here/$DB_USER/" /var/www/html/wp-config.php
+    
+    - name: Editar el password del usuario de la base de datos en el archivo de configuración
+      replace:
+        path: /var/www/html/wp-config.php
+        regexp: "password_here"
+        replace: "{{ wp_db_pass }}"
+      # sed -i "s/password_here/$DB_PASS/" /var/www/html/wp-config.php
+    
+    - name: Eliminar el archivo index.html
+      file:
+        path: /var/www/html/index.html
+        state: absent
+      # rm -f /var/html/index.html
+
+    - name: Cambiar el propietario y el grupo del directorio
+      path: /var/www/html/wordpress
+      state: directory
+      owner: www-data
+      group: www-data
+      recurse: yes
+      # chown -R www-data:www-data /var/www/html pero sólo de /wordpress

@@ -1,0 +1,25 @@
+# scripts de bash pasados a playbook
+---
+- name: Playbook para HTTPS
+  hosts: aws
+  become: yes
+
+  tasks: 
+
+    - name: Instalación del core de snapd
+      # snap install core
+
+    - name: Actualización de snapd
+      # snap refresh core
+
+    - name: Borrado de instalaciones previas de CertBot
+      # apt-get remove certbot -y
+
+    - name: Instalación de CertBot con snapd
+      # snap install --clasic certbot
+
+    - name: Creación de enlace entre el directorio donde se descarga CertBot y usr/bin/certbot
+      # ln -s /snap/bin/certbot /usr/bin/certbot
+
+    - name: Solicitud del certificado y configuración del servidor
+      # certbot --apache -m "email" --agree-tos --no-eff-email -d "dominio"

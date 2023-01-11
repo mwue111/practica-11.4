@@ -1,0 +1,123 @@
+# scripts de bash pasados a playbook
+---
+- name: Playbook para instalar PrestaShop como página principal
+  hosts: aws
+  become: yes
+
+  vars:
+    - ps_db_name: db_name
+    - ps_db_user: db_user
+    - ps_db_pass: db_pass
+  
+  tasks:
+
+    - name: Cambiar el fichero php.ini para aumetnar el tamaño de subida
+      replace:
+        path: /etc/php/8.1/apache2/php.ini
+        regexp: "upload_max_filesize = 2M"
+        replace: "upload_max_filesize = 128M"
+      # sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 128M/" /etc/php/8.1/apache2/php.ini
+    
+    - name: Cambiar el fichero php.ini para aumetnar el tamaño de subida
+      replace:
+        path: /etc/php/8.1/apache2/php.ini
+        regexp: "post_max_size = 8M"
+        replace: "post_max_size = 128M"
+      #sed -i "s/post_max_size = 8M/post_max_size = 128M/" /etc/php/8.1/apache2/php.ini
+    
+    - name: Instalación de las extensiones requeridas para PrestaShop
+      apt:
+        name:
+          - php-curl
+          - php-gd
+          - php-intl
+          - php-mbstring
+          - php-dompdf
+          - php-xml
+          - php-zip
+        state: present
+        notify: 
+          - Reiniciar el servidor Apache
+        # apt install ... -y
+    
+    - name: Borrar instalaciones anteriores
+      file:
+        path: /var/www/html
+        state: absent
+      # rm -rf /var/www/html/¿.*?
+    
+    - name: Descarga de PrestaShop
+      get_url:
+        url: https://github.com/PrestaShop/PrestaShop/releases/download/8.0.0/prestashop_8.0.0.zip
+        dest: /tmp/fullprestashop.zip
+      # wget https://github.com/PrestaShop/PrestaShop/releases/download/8.0.0/prestashop_8.0.0.zip --output-document /tmp/fullprestashop.zip
+    
+    - name: Actualización de repositorios
+      apt:
+        update_cache: yes
+      # apt update
+  
+    - name: Instalar la herramienta unzip
+      apt:
+        name: unzip
+        state: present
+      # apt install unzip -y
+    
+    - name: Eliminar instalaciones previas
+      file:
+        path: /tmp/prestashop-borrar
+        state: absent
+      # rm -rf /tmp/prestashop-borrar
+    
+    - name: Descomprimir el archivo de PrestaShop
+      unarchive:
+        src: /tmp/fullprestashop.zip
+        dest: /tmp/prestashop-borrar
+        remote_src: yes
+      # unzip /tmp/fullprestashop.zip -d /tmp/prestashop-borrar
+    
+    - name: Descomprimir el segundo archivo comprimido en un destino concreto
+      unarchive:
+        src: /tmp/prestashop-borrar/prestashop.zip
+        dest: /var/www/html
+        remote_src: yes
+      # unzip /tmp/prestashop-borrar/prestashop.zip -d /var/www/html
+
+    - name: Borrado de la carpeta creada al descomprimir el fichero
+      file:
+        path: /tmp/fullprestashop.zip
+        state: absent
+      # rm -rf /tmp/fullprestashop.zip
+    
+    - name: Instalación de PrestaShop usando CLI
+      
+      # php /var/www/html/install/index_cli.php \
+      # --domain=$DOMAIN \
+      # --db_server=$DB_BACK \
+      # --db_name=$DB_NAME \
+      # --db_user=$DB_USER \
+      # --db_password=$DB_PASS \
+      # --prefix=myshop_ \
+      # --email=$EMAIL \
+      # --password=$DB_PASS \
+      # --ssl=1
+
+    - name: Borrado de la carpeta install para que PrestaShop no dé errores
+      file:
+        path: /var/www/html/install
+        state: absent
+      # rm -rf /var/www/html/install
+    
+    - name: Cambiar el propietario y el grupo del directorio
+      path: /var/www/html/wordpress
+      state: directory
+      owner: www-data
+      group: www-data
+      recurse: yes
+      # chown -R www-data:www-data /var/www/html pero sólo de /wordpress
+
+  handlers:
+    - name: Reiniciar el servidor Apache
+      service: 
+        name: apache2
+        state: restarted
