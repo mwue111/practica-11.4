@@ -1,0 +1,11 @@
+# variables para MySQL
+
+ps_variables: 
+  - ps_db_name: db_name
+  - ps_db_user: db_user
+  - ps_db_pass: db_pass
+  - ps_db_back: 0.0.0.0
+
+https_variables: 
+  - email: nombre@email.com
+  - domain: dominiodeejemplo.com

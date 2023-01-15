@@ -4,22 +4,32 @@
   hosts: aws
   become: yes
 
+  vars_files:
+    - vars/variables.yml
+
   tasks: 
 
     - name: Instalación del core de snapd
+      shell: snap install core
       # snap install core
 
     - name: Actualización de snapd
+      shell: snap refrech core
       # snap refresh core
 
     - name: Borrado de instalaciones previas de CertBot
+      shell: apt-get remove certbot -y
       # apt-get remove certbot -y
 
     - name: Instalación de CertBot con snapd
+      shell: snap install --clasic certbot
       # snap install --clasic certbot
 
-    - name: Creación de enlace entre el directorio donde se descarga CertBot y usr/bin/certbot
+    # no hace falta
+    # - name: Creación de enlace entre el directorio donde se descarga CertBot y usr/bin/certbot
       # ln -s /snap/bin/certbot /usr/bin/certbot
 
     - name: Solicitud del certificado y configuración del servidor
-      # certbot --apache -m "email" --agree-tos --no-eff-email -d "dominio"
+      shell: certbot --apache -m "{{ email }}" --agree-tos --no-eff-email -d "{{ domain }}" --non-interactive
+      # certbot --apache -m "email" --agree-tos --no-eff-email -d "dominio" --no (o non)-interactive
+      # este con shell

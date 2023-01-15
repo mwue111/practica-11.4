@@ -9,6 +9,12 @@
       - php
       - php-mysql
       - libapache2-mod-php      
+    
+    database:
+      user: nombre_usuario
+      password: password
+      name: nombre_bd
+    # a estos datos se accede como "{{ database.user }}"
 
   tasks:
 

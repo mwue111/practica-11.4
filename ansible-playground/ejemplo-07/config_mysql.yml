@@ -8,6 +8,8 @@
     - db_user: db_user
     - db_password: db_password
 
+  # podría ser un objeto como en el ejemplo 3 o 4, es lo mismo
+
   tasks:
 
     # Para utilizar el módulo mysql_db necesitamos tener instalado el paquete python3-mysqldb
@@ -24,16 +26,16 @@
     - name: Crear una base de datos
       mysql_db:
         name: "{{ db_name }}"
-        state: present
-        login_unix_socket: /var/run/mysqld/mysqld.sock 
+        state: present  # absent para borrar la base de datos
+        login_unix_socket: /var/run/mysqld/mysqld.sock # para que no se conecte por red (porque falla). Indica que la conexión va a ser a través de localhost. Es imprescindible para conectar con MySQL.
 
     # El parámetro 'no_log: true' lo utilizamos para ocultar información de salida
     - name: Crear el usuario de la base de datos
-      no_log: true
+      no_log: true  # para que no muestre mensajes de salida donde se pueda mostrar la contraseña
       mysql_user:         
         name: "{{ db_user }}"
         password: "{{ db_password }}"
         priv: "{{ db_name }}.*:ALL"
         #host: "%"
-        state: present
+        state: present  # con absent hace un drop
         login_unix_socket: /var/run/mysqld/mysqld.sock 

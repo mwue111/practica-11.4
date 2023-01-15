@@ -4,21 +4,45 @@
   hosts: aws
   become: yes
 
-  vars:
-    - ps_db_name: db_name
-    - ps_db_user: db_user
-    - ps_db_pass: db_pass
+  vars_files:
+    - vars/variables.yml
   
   tasks:
 
-    - name: Cambiar el fichero php.ini para aumetnar el tamaño de subida
+    - name: Instalación del gestor de paquetes de Python pip3
+      apt:
+        name: python3-pip
+        state: present
+
+    - name: Instalación del módulo de pymysql
+      pip:
+        name: pymysql
+        state: present
+    
+    - name: Creación de la base de datos
+      mysql_db: 
+        name: "{{ ps_db_name }}"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+    
+    - name: Creación de un usuario
+      no_log: true
+      mysql_user: 
+        name: "{{ ps_db_user }}"
+        password: "{{ ps_db_pass }}"
+        priv: "{{ ps_db_name }}.*:ALL"
+        host: "%"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        
+    - name: Cambiar el fichero php.ini para aumentar el tamaño de subida
       replace:
         path: /etc/php/8.1/apache2/php.ini
         regexp: "upload_max_filesize = 2M"
         replace: "upload_max_filesize = 128M"
       # sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 128M/" /etc/php/8.1/apache2/php.ini
     
-    - name: Cambiar el fichero php.ini para aumetnar el tamaño de subida
+    - name: Cambiar el fichero php.ini para aumentar el tamaño de subida
       replace:
         path: /etc/php/8.1/apache2/php.ini
         regexp: "post_max_size = 8M"
@@ -89,17 +113,19 @@
         state: absent
       # rm -rf /tmp/fullprestashop.zip
     
+    # ¿Es necesario el back?
     - name: Instalación de PrestaShop usando CLI
-      
+      shell: php /var/www/html/install/index_cli.php --domain="{{ domain }}" --db_server="{{ ps_db_back }}" --db_name= "{{ ps_db_name }}" --db_user="{{ ps_db_user }}" --db_password="{{ ps_db_pass }}" --prefix=myshop_ --email="{{ email }}" --password="{{ ps_db_pass }}" --ssl=1
+
       # php /var/www/html/install/index_cli.php \
-      # --domain=$DOMAIN \
-      # --db_server=$DB_BACK \
-      # --db_name=$DB_NAME \
-      # --db_user=$DB_USER \
-      # --db_password=$DB_PASS \
+      # --domain="{{ domain }}" \
+      # --db_server="{{ ps_db_back }}" \
+      # --db_name= "{{ ps_db_name }}" \
+      # --db_user="{{ ps_db_user }}" \
+      # --db_password="{{ ps_db_pass }}" \
       # --prefix=myshop_ \
-      # --email=$EMAIL \
-      # --password=$DB_PASS \
+      # --email="{{ email }}" \
+      # --password="{{ ps_db_pass }}" \
       # --ssl=1
 
     - name: Borrado de la carpeta install para que PrestaShop no dé errores

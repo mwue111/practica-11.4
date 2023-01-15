@@ -24,7 +24,7 @@
       unarchive:
         src: /tmp/phpMyAdmin-5.2.0-all-languages.zip
         dest: /tmp/
-        remote_src: yes
+        remote_src: yes # porque si no busca el .zip en la máquina local y la copia en la remota (daría fallo)
 
     - name: Copiar phpMyAdmin
       copy:

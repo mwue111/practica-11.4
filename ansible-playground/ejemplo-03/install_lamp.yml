@@ -38,3 +38,6 @@
         src: php/phpinfo.php # ubicación del archivo fuente
         dest: /var/www/html/
         mode: 0755  # los permisos que se quiere que tenga
+        owner: www-data
+        group: www-data
+        recurse: yes

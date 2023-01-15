@@ -8,10 +8,8 @@
   # vars_files:
     # - vars/variables.yml
 
-  vars:
-    - wp_db_name: db_name
-    - wp_db_user: db_user
-    - wp_db_pass: db_pass
+  vars_files:
+    - vars/variables.yml
   
   tasks:
 
