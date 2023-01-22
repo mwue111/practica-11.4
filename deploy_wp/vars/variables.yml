@@ -1,9 +1,10 @@
 wp_variables: 
-  - wp_db_name: db_name
-  - wp_db_user: db_user
-  - wp_db_pass: db_pass
-  # - wp_db_back: 0.0.0.0
+  name: db_name # nombre de la bd
+  user: db_user
+  pass: db_pass
+  back: 172.31.60.126
+  # IP privada del back
 
 https_variables: 
-  - email: nombre@email.com
-  - domain: dominiodeejemplo.com
+  email: nombre@email.com
+  domain: dominiodeejemplo.com

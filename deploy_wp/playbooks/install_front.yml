@@ -1,7 +1,7 @@
 # scripts de bash pasados a playbook
 ---
 - name: Playbook para instalar la pila LAMP
-  hosts: aws
+  hosts: frontend
   become: yes
 
   tasks:
@@ -21,12 +21,6 @@
         name: apache2
         state: present
       # apt install apache2 -y
-
-    - name: Instalación del gestor de BD
-      apt:
-        name: mysql-server
-        state: present
-      # apt install mysql-server -y
     
     - name: Instalación de PHP y los módulos necesarios
       apt:
@@ -37,4 +31,16 @@
         state: present
       # apt install php libapache2-mod-php php-mysql -y
     
-    # ¿El reinicio es necesario?
+    - name: Copia del archivo de configuración de Apache
+      copy:
+        src: ../conf/000-default.conf 
+        dest: /etc/apache2/sites-available/000-default.conf
+        remote_src: yes
+      # cp ../conf/000-default.conf /etc/apache2/sites-available/000-default.conf
+
+    - name: Reinicio del servicio Apache
+      service:
+        name: apache2
+        state: restarted
+      # systemctl restart apache2
+    

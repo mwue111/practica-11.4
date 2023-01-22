@@ -1,5 +1,7 @@
-[aws]
+[frontend]
 3.210.102.158 
+
+[backend]
 3.217.16.146
 
 [all:vars]

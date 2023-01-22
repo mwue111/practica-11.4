@@ -5,7 +5,7 @@
   become: yes
 
   vars_files:
-    - vars/variables.yml
+    - ../vars/variables.yml
   
   tasks:
 
@@ -21,17 +21,17 @@
     
     - name: Creación de la base de datos
       mysql_db: 
-        name: "{{ ps_db_name }}"
+        name: "{{ ps_variables.name }}"
         state: present
         login_unix_socket: /var/run/mysqld/mysqld.sock
     
     - name: Creación de un usuario
       no_log: true
       mysql_user: 
-        name: "{{ ps_db_user }}"
-        password: "{{ ps_db_pass }}"
-        priv: "{{ ps_db_name }}.*:ALL"
-        host: "%"
+        name: "{{ ps_variables.user }}"
+        password: "{{ ps_variables.pass }}"
+        priv: "{{ ps_variables.name }}.*:ALL"
+        # host: "%" # sólo cuando hay una máquina para front y otra para back
         state: present
         login_unix_socket: /var/run/mysqld/mysqld.sock
         

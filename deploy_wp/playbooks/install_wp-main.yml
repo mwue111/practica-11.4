@@ -4,12 +4,8 @@
   hosts: aws
   become: yes
 
-  # Variables definidas en el playbook: vars. Si son de mysql, ¿qué nombre necesitan?
-  # vars_files:
-    # - vars/variables.yml
-
   vars_files:
-    - vars/variables.yml
+    - ../vars/variables.yml
   
   tasks:
 
@@ -56,47 +52,18 @@
         state: absent
       # rm -rf /tmp/wordpress.zip
 
-    - name: Instalación del gestor de paquetes de Python pip3
-      apt:
-        name: python3-pip
-        state: present
-    
-    - name: Instalación del módulo de pymysql
-      pip:
-        name: pymysql
-        state: present
-
-    - name: Crear la base de datos
-      mysql_db:
-        name: "{{ wp_db_name }}"
-        state: present
-        login_unix_socket: /var/run/mysqld/mysqld.sock
-      # mysql -u root <<< "DROP DATABASE IF EXISTS $DB_NAME;"
-      # mysql -u root <<< "CREATE DATABASE IF NOT EXISTS $DB_NAME;"
-
-    - name: Crear un usuario
-      no_log: true
-      mysql_user:
-        name: "{{ wp_db_user }}"
-        password: "{{ wp_db_pass }}"
-        priv: "{{ wp_db_name }}.*:ALL"
-        host: "%"
-        state: present
-        login_unix_socket: /var/run/mysqld/mysqld.sock
-      # mysql -u root <<< "DROP USER IF EXISTS $DB_USER@'%';"
-      # mysql -u root <<< "CREATE USER $DB_USER@'%' IDENTIFIED BY '$DB_PASS';"
-      # mysql -u root <<< "GRANT ALL PRIVILEGES ON $DB_NAME.* TO $DB_USER@'%';"
-      # mysql -u root <<< "FLUSH PRIVILEGES;"
-
     - name: Localizar y renombrar archivos de configuración
-      shell: cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
+      copy:
+        src: /var/www/html/wp-config-sample.php
+        dest: /var/www/html/wp-config.php
+        remote_src: yes
       # cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
 
     - name: Editar el nombre de la base de datos en el archivo de configuración
       replace:
         path: /var/www/html/wp-config.php
         regexp: "database_name_here"
-        replace: "{{ wp_db_name }}"
+        replace: "{{ wp_variables.name }}"
 
       # sed -i "s/database_name_here/$DB_NAME/" /var/www/html/wp-config.php
     
@@ -104,15 +71,21 @@
       replace: 
         path: /var/www/html/wp-config.php
         regexp: "username_here"
-        replace: "{{ wp_db_user }}"
+        replace: "{{ wp_variables.user }}"
       # sed -i "s/username_here/$DB_USER/" /var/www/html/wp-config.php
     
     - name: Editar el password del usuario de la base de datos en el archivo de configuración
       replace:
         path: /var/www/html/wp-config.php
         regexp: "password_here"
-        replace: "{{ wp_db_pass }}"
+        replace: "{{ wp_variables.pass }}"
       # sed -i "s/password_here/$DB_PASS/" /var/www/html/wp-config.php
+    
+    - name: Cambiar la ubicación de la base de datos
+      replace:
+        path: /var/www/html/wp-config.php
+        regexp: "localhost"
+        replace: "{{ wp_variables.back }}"
     
     - name: Eliminar el archivo index.html
       file:
