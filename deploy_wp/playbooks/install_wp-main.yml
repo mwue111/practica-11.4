@@ -1,7 +1,7 @@
 # scripts de bash pasados a playbook
 ---
 - name: Playbook para instalar WordPress como página principal
-  hosts: aws
+  hosts: frontend
   become: yes
 
   vars_files:

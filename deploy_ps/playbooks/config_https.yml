@@ -14,7 +14,7 @@
       # snap install core
 
     - name: Actualización de snapd
-      shell: snap refrech core
+      shell: snap refresh core
       # snap refresh core
 
     - name: Borrado de instalaciones previas de CertBot
@@ -22,7 +22,7 @@
       # apt-get remove certbot -y
 
     - name: Instalación de CertBot con snapd
-      shell: snap install --clasic certbot
+      shell: snap install --classic certbot
       # snap install --clasic certbot
 
     # no hace falta
@@ -30,6 +30,6 @@
       # ln -s /snap/bin/certbot /usr/bin/certbot
 
     - name: Solicitud del certificado y configuración del servidor
-      shell: certbot --apache -m "{{ email }}" --agree-tos --no-eff-email -d "{{ domain }}" --non-interactive
+      shell: certbot --apache -m "{{ https_variables.email }}" --agree-tos --no-eff-email -d "{{ https_variables.domain }}" --non-interactive
       # certbot --apache -m "email" --agree-tos --no-eff-email -d "dominio" --no (o non)-interactive
       # este con shell
