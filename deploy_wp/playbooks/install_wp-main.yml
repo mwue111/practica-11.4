@@ -41,8 +41,8 @@
 
     - name: Mover el código fuente al directorio de apache
       copy:
-        src: /tmp/wordpress/*
-        dest: /var/www/html/wordpress
+        src: /tmp/wordpress/
+        dest: /var/www/html/
         remote_src: yes
       # mv /tmp/wordpress/* /var/www/html
 
@@ -94,9 +94,10 @@
       # rm -f /var/html/index.html
 
     - name: Cambiar el propietario y el grupo del directorio
-      path: /var/www/html/wordpress
-      state: directory
-      owner: www-data
-      group: www-data
-      recurse: yes
+      file:
+        path: /var/www/html/
+        state: directory
+        owner: www-data
+        group: www-data
+        recurse: yes
       # chown -R www-data:www-data /var/www/html pero sólo de /wordpress

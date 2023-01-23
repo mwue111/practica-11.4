@@ -42,9 +42,9 @@
         replace: 0.0.0.0
       # sed -i "s/127.0.0.1/0.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf
     
-    - name: Reiniciar el servicio Apache
+    - name: Reiniciar MySQL
       service:
-        name: apache2
+        name: mysql
         state: restarted
       # systemctl restart apache2
     
