@@ -19,6 +19,11 @@
         name: pymysql
         state: present
     
+    - name: Instalación del sistema gestor de la base de datos
+      apt:
+        name: mysql-server
+        state: present
+    
     - name: Creación de la base de datos
       mysql_db: 
         name: "{{ ps_variables.name }}"
@@ -135,7 +140,7 @@
       # rm -rf /var/www/html/install
     
     - name: Cambiar el propietario y el grupo del directorio
-      path: /var/www/html/
+      path: /var/www/html
       state: directory
       owner: www-data
       group: www-data
