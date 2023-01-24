@@ -113,9 +113,9 @@
         state: absent
       # rm -rf /tmp/fullprestashop.zip
     
-    # ¿Es necesario el back?
+    
     - name: Instalación de PrestaShop usando CLI
-      shell: php /var/www/html/install/index_cli.php --domain="{{ domain }}" --db_server="{{ ps_db_back }}" --db_name= "{{ ps_db_name }}" --db_user="{{ ps_db_user }}" --db_password="{{ ps_db_pass }}" --prefix=myshop_ --email="{{ email }}" --password="{{ ps_db_pass }}" --ssl=1
+      shell: php /var/www/html/install/index_cli.php --domain="{{ https_variables.domain }}" --db_name= "{{ ps_variables.name }}" --db_user="{{ ps_variables.user }}" --db_password="{{ ps_variables_pass }}" --prefix=myshop_ --email="{{ https_variables.email }}" --password="{{ ps_variables.pass }}" --ssl=1
 
       # php /var/www/html/install/index_cli.php \
       # --domain="{{ domain }}" \
@@ -135,7 +135,7 @@
       # rm -rf /var/www/html/install
     
     - name: Cambiar el propietario y el grupo del directorio
-      path: /var/www/html/wordpress
+      path: /var/www/html/
       state: directory
       owner: www-data
       group: www-data
