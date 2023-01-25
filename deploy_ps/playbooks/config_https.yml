@@ -23,7 +23,7 @@
 
     - name: Instalación de CertBot con snapd
       shell: snap install --classic certbot
-      # snap install --clasic certbot
+      # snap install --classic certbot
 
     # no hace falta
     # - name: Creación de enlace entre el directorio donde se descarga CertBot y usr/bin/certbot

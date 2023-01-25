@@ -18,12 +18,13 @@ Ansible es una herramienta que permite controlar muchas máquinas (servidores) d
 6.	Configurar el acceso por SSH: Amazon ya da el vockey para eso (ya genera la clave pública y privada). En el directorio de trabajo es necesario ejecutar el comando *ansible aws -m* (módulo de ansible que se empleará, en este caso ping) *ping -i* (para darle el archivo de inventario) *inventario* (el nombre del fichero donde están los grupos de Ansible) *--user* (indica con qué usuario remoto nos conectaremos) *ubuntu --private-key ruta\de\la\clave\vockey.pem*. El comando completo, sin comentarios, es entonces: *ansible aws -m ping -i inventario.txt --user ubuntu --private-key ruta/de/la/clave/vockey.pem*.
 
 7.	Desde el archivo del inventario podemos especificar unas variables que se apliquen a todos los grupos, justo debajo de [aws]: 
-```
+
+````
 [all:vars] 
 ansible_user=ubuntu 
 ansible_ssh_private_key_file=/ruta/de/la/clave/vockey.pem`
 ````
- Esto hará que en el comando no se le tenga que pasar usuario y clave, reduciendo el comando a *ansible aws -m ping -i inventario*.
+- Esto hará que en el comando no se le tenga que pasar usuario y clave, reduciendo el comando a *ansible aws -m ping -i inventario*.
 
 8.	Para que no pregunte por el fingerprint, se puede añadir al fichero de inventario otros parámetros para aceptar cualquier fingerprint que venga (*ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new'*) o configurar la variable de entorno ANSIBLE_HOST_KEY_CHECKING a false para que no sea necesario aceptar el fingerprint de instancias remotas. En este caso, se hace lo primero.
 
@@ -32,56 +33,43 @@ ansible_ssh_private_key_file=/ruta/de/la/clave/vockey.pem`
 10.	Un playbook es un archivo yaml donde se definen tareas que se quieren ejecutar dentro de cada máquina. Tiene su propia sintaxis:
     - El fichero empieza siempre con tres guiones simples (---).
     - El guión define un array.
-    - Hosts define sobre qué máquinas se aplicarán todas las tareas definidas en el .yml. Si hubiera varios grupos se agruparían con comas: host: aws, front, back…
-    - Become: yes indica que todas las tareas se ejecutan con sudo (ocmo root). 
-    - Tasks son las tareas a lanzar. Cada una tiene un name y un comando, que indica el módulo de ansible que se quiere ejecutar (ping o Shell que hemos hecho antes). Si sólo quisiéramos ejecutar algunas tareas como root habría que poner dentro de tasks, debajo de name, become: yes.
+    - *Hosts* define sobre qué máquinas se aplicarán todas las tareas definidas en el .yml. Si hubiera varios grupos se agruparían con comas: host: aws, front, back…
+    - *Become*: yes indica que todas las tareas se ejecutan con sudo (ocmo root). 
+    - *Tasks* son las tareas a lanzar, que estarán dentro de paquetes o módulos. Cada uno tiene un *name* (descripción o título) y un comando, que indica lo que se quiere ejecutar. *Nota: si sólo quisiéramos ejecutar algunas tareas como root habría que poner dentro de tasks y debajo de name **become: yes** en lugar de especificarlo al inicio del fichero.*
+    - Dentro de tasks se definen los módulos que se quiere que estén presentes en las máquinas remotas (por ejemplo, con el módulo *apt*, el *name* del paquete que interesa y *state*: present), si se quiere reiniciar el sistema (dentro del módulo *service* indicando el *name* del servicio a reiniciar y como *state*: restarted), o si se quieren mover ficheros, renombrarlos, crearlos, etc. Cada una de estas acciones tienen un módulo correspondiente. *Nota: para tener acceso a los nombres de los paquetes se puede ejecutar el comando apt search *una palabra clave como php, por ejemplo*.
+    - Para copiar un archivo que esté presente en la máquina remota en otro directorio de esa misma máquina con el módulo *copy* será necesario añadir *remote_src:yes*. En caso contrario, intentará copiar desde la máquina local a la máquina remota un directorio que en el mejor de los casos no existe.
     
-11.	Para poder ejecutar el playbook install_lamp.yaml hay que ejecutar el comando *ansible-playbook -i inventario install_lamp.yml*
+11.	Para poder ejecutar el playbook install_lamp.yml hay que ejecutar el comando *ansible-playbook -i inventario install_lamp.yml*
+12. No es recomendable utilizar los módulos *shell* ni *command* si existe un módulo específico para la tarea que se quiere realizar.
 
 #
-TODO
+## Práctica: crear la infraestructura necesaria para instalar PrestaShop y WordPress, uno con una arquitectura de un nivel y otro con una arquitectura en dos niveles.
 
-a.	Tasks tiene el nombre y además tiene dentro de apt (que es un módulo) identificado el nombre de los paquetes que se quiere que estén presentes en las máquinas remotas (se define con el estado state: present). Tener en cuenta que el módulo que engloba los paquetes no siempre será apt, por ejemplo para reestablecer apache se usa el módulo service (línea 31 del install_lamp.yml en ejemplo-03). Ahí se especifica también el estado como reiniciado: state: restarted.
-Para tener acceso a los nombres de los paquetes se puede ejecutar el comando apt search *una palabra clave como php, por ejemplo*.
-14.	Copiar un archivo en la máquina remota en otro directorio en esa misma máquina remota con el módulo copy: se emplea igual añadiendo remote_src: yes. Si no lleva esto, copia desde la máquina local a la máquina remota. Para que funcione, la carpeta en src tiene que existir en la máquina remota, porque si no estará buscando un directorio en la máquina remota que no existe.
-pip: gestor de paquete de Python. Se ha usado en el ejemplo 07 para instalar el módulo de pymysql.
-15.	Conectar con MySQL desde playbook: en la tarea con el módulo mysql_db hay que especificar login_unix_socket: /var/run/mysqld/mysqld.sock tal cual para que no se conecte por red (porque falla). Esta línea indica que la conexión va a ser a través de localhost. Es imprescindible para conectar con MySQL.
-Si se especifica became:yes en sólo una tarea, el resto se ejecutan como el usuario que se ha conectado por SSH (en este caso, como usuario ubuntu).
-Para CLI: Shell con chdir:
-Shell: 
-cmd: comando
-chdir: dirección/de/index_cli o como se llame
-IaC
-https://josejuansanchez.org/iaw/practica-aws-cli/index.html
-Permite replicar el mismo entorno siempre. Igual que se tienen scripts para el software, se tienen scripts para la infraestructura. Es el IaC, Infraestructure as Code. Amazon tiene AWS CLI, AWS cloudformation (yaml), específicas de él. Ansible y Terraform se pueden emplear en cualquier plataforma. En el curso se verán las de Amazon.
-1.	Insalar el CLI de amazon
-a.	Entramos en AWS details y pulsamos show en aws cli.
-b.	Instalamos cli en nuestra máquina local. 
-i.	Buscar aws cli en Google.
-ii.	Entramos en instalar o actualizar en el primer resultado.
-iii.	Coger el de Linux y copiarlo en consola donde está la práctica (no importa dónde se lanza el instalador, porque se instala en otro directorio. El código fuente se queda en la practica 9, se puede borrar).
-iv.	Configurar usuario y contraseña: aws configure para que salga el asistente de configuración. Rellenar todo con bla o con lo que sea y creará dos archivos: uno llamado credentials que cambiaremos más adelante y otro llamado config, que permite configurar región y formato de salida.
-v.	Para que esto sea seguro, se usan tokens en lugar de poner usuario y contraseña. Para conseguirlas, las buscamos en aws cli: ahí obtendremos la aws_secret_key_id, aws_secret_access_key y aws_session_token. Estas claves tendremos que cambiarlas cada vez que levantemos el servidor. Para cambiarlas en el directorio se emplea el comando code /home/usuario/.aws/credentials y allí se copian. En este fichero suele haber diferentes tokens para diferentes clientes, [default] es el que se crea pero se podría añadir debajo [proyectoA], [proyectoB], etc.
-vi.	Lo mismo para el archivo config:  code /home/usuario/-aws/config y se cambia el contenido: región = us-east-1 y output = json.
-vii.	Para comprobar si ha funcionado, ejecutar el comando aws ec2 (ec2 es el servicio) describe-instances y tiene que devolver un json con las instancias creadas.
-2.	Creación de un grupo de seguridad: ejecutar el comando aws ec2 create-security-group --description <value> --group-name <value>. Los grupos de seguridad se empleaban para establecer las reglas de entrada (el tráfico al que se permite la entrada) estableciendo los puertos. Para comprobar si se ha creado, se ejecuta aws ec2 describe-security-groups y debe devolver un json con la información de todos los grupos de seguridad creados en amazon. Si sólo queremos la información de un grupo, se ejecuta aws ec2 describe-security-groups --group-name frontend-sg
-3.	Añadir reglas de entrada al grupo de seguridad: igual que en la interfaz de AWS pero con comando, ejecutando este: aws ec2 authorize-security-group-ingress[--group-id <value>][--group-name <value>][--ip-permissions <value>][--dry-run | --no-dry-run][--tag-specifications <value>][--protocol <value>][--port <value>][--cidr <value>][--source-group <value>][--group-owner <value>][--cli-input-json | --cli-input-yaml][--generate-cli-skeleton <value>]. Hay que ejecutar este comando por cada puerto que se abra (por cada regla de seguridad añadida).
-4.	Eliminar un grupo de seguridad: aws ec2 delete-security-group[--group-id <value>][--group-name <value>][--dry-run | --no-dry-run][--cli-input-json | --cli-input-yaml][--generate-cli-skeleton <value>]. No hay un comando que borre todos los comandos, así que se obtiene m ediante in comando un listado con todos los id de todos los grupos y esa información se manda a otro comando. El parámetro query permite obtener ciertos datos dentro de un json: en el ejemplo de los apuntes, cuando pone –query “SecurityGroups[*].GroupId” de todos los elementos de segurityGroups se quiere recoger el id como GroupId. Con –output text se obtiene el resultado del comando. La respuesta se puede obtener de diferentes formas, aunque se haya puesto json por defecto.
-5.	Crear una instancia en EC2: se emplea el comando aws ec2 run-instances. Los parámetros se sacan de la interfaz de amazon: el ID de AMI se obtiene al crear una instancia (el de Ubuntu será ami-06878d265978313ca), al elegir un sistema operativo u otro. Count indica la cantidad de instancias que se están creando, el tipo de insancia será t2.micro (ambos valores van por defecto). En la práctica se ha copiado directamente el comando de los apuntes. 
-6.	Durante la creación de la instancia, el parámetro user-data permite pasarle un comando o una lista de comandos o con file un script (como los de bash). Por tanto, permite crear la instancia y preparar LAMP y todo lo que se tenga en estos scripts.
-7.	Creamos un fichero install_nginx.sh con los comandos sudo apt update y sudo apt install -y nginx y, tras esto y en el mismo directorio donde se encuentra este fichero, se lanza el comando aws ec2 run-instances   --image-id ami-050406429a71aaa64 --count 1 --instance-type t2.micro --key-name vockey --security-groups frontend-sg --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=frontend-01}]" --user-data file://install_nginx.sh. Así, se crea una instancia con nginx instalado.
-VARIABLE = $(comando) en bash ejecuta el comando que haya dentro de los paréntesis y los almacena en la variable
-AWS CloudFormation
-CF es un servicio que permite automatizar la creación y gestión de recursos en AWS a partir de una plantilla. Es exclusivo de Amazon y en él no están disponibles todos los servicios de Amazon. 
-La plantilla se hará en YAML.
-Stacks: una pila o caja con los recursos, similar a Docker.
-1.	Clonar el repo de JJ en el punto 1.9 
-2.	En el ejemplo 1 se define lo que es cada cosa
-3.	En AWS, buscar cloudformation.
-a.	Crear plantilla con recursos
-b.	Las plantillas puede estar lista, usar una de ejemplo o crearla. Se elige la primera opción, la plantilla está lista.
-c.	En especificar plantilla sale que la URL está en S3, que es un bucket con diferentes cosas (¿) para crear el stack.
-d.	Se selecciona cargar archvo de plantilla y se selecciona el ejemplo 1 del repo clonado.
-e.	Se da a siguiente, se selecciona nombre (ejemplo-01) y ya todo siguiente.
-f.	Una vez creada se ve en instancias de ec2 y se elimina.
+Para crear la infraestructura se crearán diferentes directorios: 
+- **/inventory** contendrá el fichero **inventario**, que contiene las IP elásticas de las instancias de front y back agrupadas como [aws] y un grupo llamado [aws:vars] que define el user, la clave privada y un parámetro para que no pregunte por el fingerprint.
+- **/playbooks** contendrá todos los ficheros yaml en los cuales se definirán las tareas que se quieren ejecutar dentro de cada máquina.
+- **/vars** contendrá un fichero con las variables que se emplearán en los playbooks.
+- Habrá un fichero llamado **main.yml** que importará todos los playbooks para ejecutarlos desde consola llamando únicamente un fichero.
 
+Dentro de **/playbooks** se crean tres ficheros:
+- **install_lamp.yml**: contiene las instrucciones necesarias para instalar la pila LAMP. 
+  - *hosts* será aws, el grupo definido en **inventario**.
+  - *become*: **yes** para ejecutar como root.
+  - Dentro de *tasks* se realizarán las siguientes tareas:
+    - Actualiazr los repositorios utilizando el módulo *apt* y *update_cache:yes*. Esto es equivalente a ejecutar el comando *apt update* en bash.
+    - Actualizar paquetes instalados utilizando el mismo módulo *apt* y *upgrade: dist*. Equivalente al comando *apt upgrade -y* en bash.
+    - Instalación del servidor web Apache con el módulo *apt*, *name* apache2 y *state* present. Equivalenta al comando *apt install apache2 -y* en bash.
+    - Instalación del gestor de la base de datos con el módulo *apt*, *name*: mysql-server y *state*: present. Equivalente al comando *apt install mysql-server -y*.
+    - Instalación de PHP y los módulos necesarios con el módulo *apt*, listando debajo de *name* qué módulos son requeridos y definiendo como *state*: present. Esto es equivalente al comando *apt install php libapache2-mod-php php-mysql -y* de bash.
+    
+- **config_https.yml**: contiene las instrucciones para obtener el certificado HTTPS. Se definen los *hosts* y *become* al igual que **install_lamp**. Además, se indica que las variables se deben sacar del fichero de variables que se creó en **/vars** con *vars_files* y la ruta a dicho fichero. Dentro de las tareas:
+  - Instalación del core de snapd con el módulo *shell* y el comando *snap install core*. 
+  - Actualización de snapd con el módulo *shell* y el comando *snap refresh core*.
+  - Borrado de instalaciones previas de CertBot con el mismo módulo y el comando *apt-get remove certbot -y*.
+  - Instalación de CertBot con snapd con el mismo módulo y el comando *snap install --classic certbot*
+  - Solicitud del certificado y configuración del servidor con el mismo módulo y un comando que requiere las variables, que se introducen con comillas dobles y doble llave: *certbot --apache -m "{{ https_variables.email }}" --agree-tos --no-eff-email -d "{{ https_variables.domain }}" --non-interactive*.
+
+- **install_ps-main.yml**: este es el playbook más extenso, ya que contiene la instalación de paquetes de Python requeridos para que funcione MySQL, la instalación de este SGBD, la creación de la base de datos y el usuario, instalación de herramientas de desempaquetado como unzip y configuraciones propias del entorno que PrestaShop requiere para poder instalarlo
+
+# 
+*pendiente de completar*
