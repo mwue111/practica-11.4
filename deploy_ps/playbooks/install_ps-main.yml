@@ -64,9 +64,7 @@
           - php-dompdf
           - php-xml
           - php-zip
-        state: present
-        notify: 
-          - Reiniciar el servidor Apache
+        update_cache: yes
         # apt install ... -y
     
     - name: Borrar instalaciones anteriores
@@ -98,6 +96,12 @@
         state: absent
       # rm -rf /tmp/prestashop-borrar
     
+    - name: Crear la carpeta prestashop-borrar
+      file:
+        path: /tmp/prestashop-borrar
+        state: directory
+        remote_src: yes
+
     - name: Descomprimir el archivo de PrestaShop
       unarchive:
         src: /tmp/fullprestashop.zip
@@ -105,22 +109,35 @@
         remote_src: yes
       # unzip /tmp/fullprestashop.zip -d /tmp/prestashop-borrar
     
-    - name: Descomprimir el segundo archivo comprimido en un destino concreto
+    # crear otra carpeta y moverla a tmp
+    - name: Crear la carpeta prestashop
+      file:
+        path: /tmp/prestashop
+        state: directory
+        remote_src: yes
+    
+    - name: Descomprimir el segundo archivo de PrestaShop
       unarchive:
         src: /tmp/prestashop-borrar/prestashop.zip
-        dest: /var/www/html
+        dest: /tmp/prestashop
         remote_src: yes
       # unzip /tmp/prestashop-borrar/prestashop.zip -d /var/www/html
+    
+    - name: Mover la carpeta prestahop a /var/www/html
+      copy:
+        src: /tmp/prestashop
+        dest: /var/www/html
+        remote_src: yes
+      # cp /tmp/prestashop /var/www/html/
 
     - name: Borrado de la carpeta creada al descomprimir el fichero
       file:
         path: /tmp/fullprestashop.zip
         state: absent
       # rm -rf /tmp/fullprestashop.zip
-    
-    
+      
     - name: Instalación de PrestaShop usando CLI
-      shell: php /var/www/html/install/index_cli.php --domain="{{ https_variables.domain }}" --db_name= "{{ ps_variables.name }}" --db_user="{{ ps_variables.user }}" --db_password="{{ ps_variables_pass }}" --prefix=myshop_ --email="{{ https_variables.email }}" --password="{{ ps_variables.pass }}" --ssl=1
+      shell: php /var/www/html/install/index_cli.php --domain="{{ https_variables.domain }}" --db_name= "{{ ps_variables.name }}" --db_user="{{ ps_variables.user }}" --db_password="{{ ps_variables.pass }}" --prefix=myshop_ --email="{{ https_variables.email }}" --password="{{ ps_variables.pass }}" --ssl=1
 
       # php /var/www/html/install/index_cli.php \
       # --domain="{{ domain }}" \
@@ -140,14 +157,14 @@
       # rm -rf /var/www/html/install
     
     - name: Cambiar el propietario y el grupo del directorio
-      path: /var/www/html
-      state: directory
-      owner: www-data
-      group: www-data
-      recurse: yes
+      file:
+        path: /var/www/html
+        state: directory
+        owner: www-data
+        group: www-data
+        recurse: yes
       # chown -R www-data:www-data /var/www/html pero sólo de /wordpress
 
-  handlers:
     - name: Reiniciar el servidor Apache
       service: 
         name: apache2
