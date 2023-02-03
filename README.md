@@ -1,5 +1,5 @@
-# practica-09
-Introducción a Ansible
+# Practica 11
+## Introducción a Ansible
 
 Ansible es una herramienta que permite controlar muchas máquinas (servidores) desde una sola sin necesidad de un agente software externo o bash (que se conectaba a cada máquina, una a una). Se conecta con SSH a cada una de ellas y requiere una clave privada y otra pública. Guarda los archivos como .yaml o .yml.
 
@@ -45,18 +45,24 @@ ansible_ssh_private_key_file=/ruta/de/la/clave/vockey.pem`
 #
 ## Práctica: crear la infraestructura necesaria para instalar PrestaShop y WordPress, uno con una arquitectura de un nivel y otro con una arquitectura en dos niveles.
 
-Para crear la infraestructura se crearán diferentes directorios: 
-- **/inventory** contendrá el fichero **inventario**, que contiene las IP elásticas de las instancias de front y back agrupadas como [aws] y un grupo llamado [aws:vars] que define el user, la clave privada y un parámetro para que no pregunte por el fingerprint.
+Para crear la infraestructura se crearán diferentes directorios, comunes a ambas infraestructuras (salvo un directorio propio de **WordPress**): 
+- **/inventory** contendrá el fichero **inventario**, que contiene un grupo llamado [aws:vars] que define el user, la clave privada y un parámetro para que no pregunte por el fingerprint y, además:
+  - En **PrestaShop**: las IP elásticas de las instancias de front y back agrupadas como [aws]
+  - En **WordPress**: las IP elásticas de las  instancias de front y back separadas en dos grupos: [frontend] y [backend]. 
+  
 - **/playbooks** contendrá todos los ficheros yaml en los cuales se definirán las tareas que se quieren ejecutar dentro de cada máquina.
 - **/vars** contendrá un fichero con las variables que se emplearán en los playbooks.
 - Habrá un fichero llamado **main.yml** que importará todos los playbooks para ejecutarlos desde consola llamando únicamente un fichero.
+- En el caso de **WordPress**, además, habrá un dirctorio **/conf** en el cual se guardará el fichero **000-default.conf** necesario para permitir la sobrescritura en /var/www/html.
+  
+### PrestaShop
 
 Dentro de **/playbooks** se crean tres ficheros:
 - **install_lamp.yml**: contiene las instrucciones necesarias para instalar la pila LAMP. 
   - *hosts* será aws, el grupo definido en **inventario**.
   - *become*: **yes** para ejecutar como root.
   - Dentro de *tasks* se realizarán las siguientes tareas:
-    - Actualiazr los repositorios utilizando el módulo *apt* y *update_cache:yes*. Esto es equivalente a ejecutar el comando *apt update* en bash.
+    - Actualizar los repositorios utilizando el módulo *apt* y *update_cache:yes*. Esto es equivalente a ejecutar el comando *apt update* en bash.
     - Actualizar paquetes instalados utilizando el mismo módulo *apt* y *upgrade: dist*. Equivalente al comando *apt upgrade -y* en bash.
     - Instalación del servidor web Apache con el módulo *apt*, *name* apache2 y *state* present. Equivalenta al comando *apt install apache2 -y* en bash.
     - Instalación del gestor de la base de datos con el módulo *apt*, *name*: mysql-server y *state*: present. Equivalente al comando *apt install mysql-server -y*.
@@ -69,7 +75,66 @@ Dentro de **/playbooks** se crean tres ficheros:
   - Instalación de CertBot con snapd con el mismo módulo y el comando *snap install --classic certbot*
   - Solicitud del certificado y configuración del servidor con el mismo módulo y un comando que requiere las variables, que se introducen con comillas dobles y doble llave: *certbot --apache -m "{{ https_variables.email }}" --agree-tos --no-eff-email -d "{{ https_variables.domain }}" --non-interactive*.
 
-- **install_ps-main.yml**: este es el playbook más extenso, ya que contiene la instalación de paquetes de Python requeridos para que funcione MySQL, la instalación de este SGBD, la creación de la base de datos y el usuario, instalación de herramientas de desempaquetado como unzip y configuraciones propias del entorno que PrestaShop requiere para poder instalarlo
+- **install_ps-main.yml**: este es el playbook más extenso, ya que contiene la instalación de paquetes de Python requeridos para que funcione MySQL, la instalación de este SGBD, la creación de la base de datos y el usuario, instalación de herramientas de desempaquetado como unzip y configuraciones propias del entorno que PrestaShop requiere para poder instalarlo.
 
+### WordPress
+Dentro de **/playbooks** se crean cuatro ficheros:
+- **install_front.yml**: contiene las instrucciones necesarias para instalar el frontend de WordPress.
+  - *hosts* será frontend esta vez, el grupo definido en **inventario** para el front.
+  - *become*: **yes** para ejecutar como root.
+  - Dentro de *tasks* se realizarán las siguientes tareas:
+    - Actualizar los repositorios utilizando el módulo *apt* y *update_cache:yes*. Esto es equivalente a ejecutar el comando *apt update* en bash.
+    - Actualizar paquetes instalados utilizando el mismo módulo *apt* y *upgrade: dist*. Equivalente al comando *apt upgrade -y* en bash.
+    - Instalación del servidor web Apache con el módulo *apt*, *name* apache2 y *state* present. Equivalenta al comando *apt install apache2 -y* en bash.
+    - Instalación de PHP y los módulos necesarios con el módulo *apt*, listando debajo de *name* qué módulos son requeridos y definiendo como *state*: present. Esto es equivalente al comando *apt install php libapache2-mod-php php-mysql -y* de bash.
+    - Copia del archivo de configuración de Apache con el módulo *copy*, indicando como *src* o fuente la ruta donde almacenamos el fichero **000-default.conf** (dentro del dorectorio **/conf**) y como destino (*dest*) la ruta a la cual se debe copiar este archivo de configuración. Esta tarea sería equivalente al comando *cp ../conf/000-default.conf /etc/apache2/sites-available/000-default.conf* de bash.
+    - Reinicio del servicio Apache con el módulo *service*, indicando como *name* apache2 y como *state*: restarted. Equivalente al comando *systemctl restart apache2* en bash.
+
+- **install_back.yml**: contiene las instrucciones necesarias para instalar el backend de WordPress.
+  - *hosts* será backend esta vez, el grupo definido en **inventario** para el back.
+  - *become*: **yes** para ejecutar como root.
+  - Dentro de *tasks* se realizarán las siguientes tareas:
+    - Actualizar los repositorios utilizando el módulo *apt* y *update_cache:yes*. Esto es equivalente a ejecutar el comando *apt update* en bash.
+    - Actualizar paquetes instalados utilizando el mismo módulo *apt* y *upgrade: dist*. Equivalente al comando *apt upgrade -y* en bash.
+    - Instalación del gestor de paquetes Python pip3, imprescindible para que MySQL funcione. Esto se hace con el módulo *apt*, indicando como *name* python-pip y como *state*:present.
+    - Instalación del módulo de pymysql con *pip*, indicando el *name*: pymysql y *state*:present.
+    - Instalación del gestor de la base de datos con el módulo *apt*, *name*: mysql-server y *state*: present. Equivalente al comando *apt install mysql-server -y*.
+    - Configuración de MySQL para poder conectar con el frontend.
 # 
 *pendiente de completar*
+- name: Configuración de MySQL para poder conectar con el frontend
+      replace:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        regexp: 127.0.0.0
+        replace: 0.0.0.0
+      # sed -i "s/127.0.0.1/0.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf
+    
+    - name: Reiniciar MySQL
+      service:
+        name: mysql
+        state: restarted
+      # systemctl restart apache2
+    
+    - name: Crear la base de datos
+      mysql_db:
+        name: "{{ wp_variables.name }}"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      # mysql -u root <<< "DROP DATABASE IF EXISTS $DB_NAME;"
+      # mysql -u root <<< "CREATE DATABASE IF NOT EXISTS $DB_NAME;"
+
+    - name: Crear un usuario
+      no_log: true
+      mysql_user:
+        name: "{{ wp_variables.user }}"
+        password: "{{ wp_variables.pass }}"
+        priv: "{{ wp_variables.name }}.*:ALL"
+        host: "%" # sólo cuando hay una máquina para front y otra para back
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      # mysql -u root <<< "DROP USER IF EXISTS $DB_USER@'%';"
+      # mysql -u root <<< "CREATE USER $DB_USER@'%' IDENTIFIED BY '$DB_PASS';"
+      # mysql -u root <<< "GRANT ALL PRIVILEGES ON $DB_NAME.* TO $DB_USER@'%';"
+      # mysql -u root <<< "FLUSH PRIVILEGES;"
+
+ En la carpeta 13.1 está la práctica de AWS CLI (https://josejuansanchez.org/iaw/practica-aws-cli/index.html)
