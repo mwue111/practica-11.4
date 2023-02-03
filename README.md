@@ -73,3 +73,4 @@ Dentro de **/playbooks** se crean tres ficheros:
 
 # 
 *pendiente de completar*
+En la carpeta 13.1 está la práctica de AWS CLI (https://josejuansanchez.org/iaw/practica-aws-cli/index.html)
