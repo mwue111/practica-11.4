@@ -1,5 +1,5 @@
-# Practica 11
-## Introducción a Ansible
+# practica-11
+Introducción a Ansible
 
 Ansible es una herramienta que permite controlar muchas máquinas (servidores) desde una sola sin necesidad de un agente software externo o bash (que se conectaba a cada máquina, una a una). Se conecta con SSH a cada una de ellas y requiere una clave privada y otra pública. Guarda los archivos como .yaml o .yml.
 
