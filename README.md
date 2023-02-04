@@ -1,5 +1,4 @@
-# practica-11
-Introducción a Ansible
+# Ansible
 
 Ansible es una herramienta que permite controlar muchas máquinas (servidores) desde una sola sin necesidad de un agente software externo o bash (que se conectaba a cada máquina, una a una). Se conecta con SSH a cada una de ellas y requiere una clave privada y otra pública. Guarda los archivos como .yaml o .yml.
 
@@ -99,42 +98,46 @@ Dentro de **/playbooks** se crean cuatro ficheros:
     - Instalación del gestor de paquetes Python pip3, imprescindible para que MySQL funcione. Esto se hace con el módulo *apt*, indicando como *name* python-pip y como *state*:present.
     - Instalación del módulo de pymysql con *pip*, indicando el *name*: pymysql y *state*:present.
     - Instalación del gestor de la base de datos con el módulo *apt*, *name*: mysql-server y *state*: present. Equivalente al comando *apt install mysql-server -y*.
-    - Configuración de MySQL para poder conectar con el frontend.
-# 
-*pendiente de completar*
-- name: Configuración de MySQL para poder conectar con el frontend
-      replace:
-        path: /etc/mysql/mysql.conf.d/mysqld.cnf
-        regexp: 127.0.0.0
-        replace: 0.0.0.0
-      # sed -i "s/127.0.0.1/0.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf
-    
-    - name: Reiniciar MySQL
-      service:
-        name: mysql
-        state: restarted
-      # systemctl restart apache2
-    
-    - name: Crear la base de datos
-      mysql_db:
-        name: "{{ wp_variables.name }}"
-        state: present
-        login_unix_socket: /var/run/mysqld/mysqld.sock
-      # mysql -u root <<< "DROP DATABASE IF EXISTS $DB_NAME;"
-      # mysql -u root <<< "CREATE DATABASE IF NOT EXISTS $DB_NAME;"
+    - Configuración de MySQL para poder conectar con el frontend con el módulo *replace*. Con esto se consigue que el backend se pueda conectar con el frontend desde cualquier IP. Se establece como ruta (*path*) **/etc/mysql/mysql.conf.d/mysqld.cnf** y se define *regexp* como 127.0.0.0 y *replace* como 0.0.0.0. Esto sería equivalente al comando *sed -i "s/127.0.0.1/0.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf* en bash.
+    - Se reinicia el MySQL con el módulo *service* indicando *name*:mysql y *state*:restarted. Sería equivalente al comando *systemctl restart apache2*.
+    - Se crea la base de datos con el módulo *mysql_db*. Se especifica el *name* como la variable almacenada en el fichero **/vars**, *state*:present y se indica como *login_unix_socket: /var/run/mysqld/mysqld.sock* para que se conecte desde localhost (si no se indica, falla). El equivalente en bash serían los comandos *mysql -u root <<< "DROP DATABASE IF EXISTS $DB_NAME;"* y *mysql -u root <<< "CREATE DATABASE IF NOT EXISTS $DB_NAME;"*.
+    - Se crea el usuario especificando *no_log*:true y con el módulo *mysql_user* se especifican los datos relacionados con el usuario, como el nombre (*name*) y la contraseña (*password*) haciendo uso de las variables en **/vars**. Se conceden priviledios con *priv* interpolando el nombre de la base de datos y especificando que se darán todos los privilegios en todas las tablas de esa base de datos *"{{ wp_variables.name }}.\*:ALL"*. Como habrá una máquina para front y otra para back, se define *host*:"%" para que los usuarios puedan conectarse desde cualquier servidor. Se indica que el estado debe ser presente con *state*:present y, otra vez, hay que especificar *login_unix_socket: /var/run/mysqld/mysqld.sock*. Esto sería equivalente a los comandos:
+      - *mysql -u root <<< "DROP USER IF EXISTS $DB_USER@'%';"*, 
+      - *mysql -u root <<< "CREATE USER \$DB_USER@'%' IDENTIFIED BY '$DB_PASS';"*, 
+      - *mysql -u root <<< "GRANT ALL PRIVILEGES ON $DB_NAME.\* TO $DB_USER@'%';"*
+      - *mysql -u root <<< "FLUSH PRIVILEGES;"*
 
-    - name: Crear un usuario
-      no_log: true
-      mysql_user:
-        name: "{{ wp_variables.user }}"
-        password: "{{ wp_variables.pass }}"
-        priv: "{{ wp_variables.name }}.*:ALL"
-        host: "%" # sólo cuando hay una máquina para front y otra para back
-        state: present
-        login_unix_socket: /var/run/mysqld/mysqld.sock
-      # mysql -u root <<< "DROP USER IF EXISTS $DB_USER@'%';"
-      # mysql -u root <<< "CREATE USER $DB_USER@'%' IDENTIFIED BY '$DB_PASS';"
-      # mysql -u root <<< "GRANT ALL PRIVILEGES ON $DB_NAME.* TO $DB_USER@'%';"
-      # mysql -u root <<< "FLUSH PRIVILEGES;"
+Se ejecutan los playbooks con los comandos *ansible-playbook -i inventario nombre_del_playbook.yml*.
+
+#
+
+# AWS CLI 
+
+AWS CLI es una herramienta que permite gestionar servicios de Amazon Web Services accediendo a la API de AWS desde la línea de comandos. Permite replicar el mismo entorno siempre: igual que se tienen scripts para el software, se tienen scripts para la infraestructura. 
+
+1. Insalar el CLI de amazon
+
+#
+*pendiente de terminar*
+
+   1. Entramos en AWS details y pulsamos show en aws cli
+   2. Instalamos cli en nuestra máquina local. 
+   3. Buscar aws cli en Google.
+   4. Entramos en instalar o actualizar en el primer resultado.
+   5. Coger el de Linux y copiarlo en consola donde está la práctica (no importa dónde se lanza el instalador, porque se instala en otro directorio. El código fuente se queda en la practica 9, se puede borrar).
+iv.	Configurar usuario y contraseña: aws configure para que salga el asistente de configuración. Rellenar todo con bla o con lo que sea y creará dos archivos: uno llamado credentials que cambiaremos más adelante y otro llamado config, que permite configurar región y formato de salida.
+v.	Para que esto sea seguro, se usan tokens en lugar de poner usuario y contraseña. Para conseguirlas, las buscamos en aws cli: ahí obtendremos la aws_secret_key_id, aws_secret_access_key y aws_session_token. Estas claves tendremos que cambiarlas cada vez que levantemos el servidor. Para cambiarlas en el directorio se emplea el comando code /home/usuario/.aws/credentials y allí se copian. En este fichero suele haber diferentes tokens para diferentes clientes, [default] es el que se crea pero se podría añadir debajo [proyectoA], [proyectoB], etc.
+vi.	Lo mismo para el archivo config:  code /home/usuario/-aws/config y se cambia el contenido: región = us-east-1 y output = json.
+vii.	Para comprobar si ha funcionado, ejecutar el comando aws ec2 (ec2 es el servicio) describe-instances y tiene que devolver un json con las instancias creadas.
+
+2.	Creación de un grupo de seguridad: ejecutar el comando aws ec2 create-security-group --description <value> --group-name <value>. Los grupos de seguridad se empleaban para establecer las reglas de entrada (el tráfico al que se permite la entrada) estableciendo los puertos. Para comprobar si se ha creado, se ejecuta aws ec2 describe-security-groups y debe devolver un json con la información de todos los grupos de seguridad creados en amazon. Si sólo queremos la información de un grupo, se ejecuta aws ec2 describe-security-groups --group-name frontend-sg
+3.	Añadir reglas de entrada al grupo de seguridad: igual que en la interfaz de AWS pero con comando, ejecutando este: aws ec2 authorize-security-group-ingress[--group-id <value>][--group-name <value>][--ip-permissions <value>][--dry-run | --no-dry-run][--tag-specifications <value>][--protocol <value>][--port <value>][--cidr <value>][--source-group <value>][--group-owner <value>][--cli-input-json | --cli-input-yaml][--generate-cli-skeleton <value>]. Hay que ejecutar este comando por cada puerto que se abra (por cada regla de seguridad añadida).
+4.	Eliminar un grupo de seguridad: aws ec2 delete-security-group[--group-id <value>][--group-name <value>][--dry-run | --no-dry-run][--cli-input-json | --cli-input-yaml][--generate-cli-skeleton <value>]. No hay un comando que borre todos los comandos, así que se obtiene mediante in comando un listado con todos los id de todos los grupos y esa información se manda a otro comando. El parámetro query permite obtener ciertos datos dentro de un json: en el ejemplo de los apuntes, cuando pone –query “SecurityGroups[*].GroupId” de todos los elementos de segurityGroups se quiere recoger el id como GroupId. Con –output text se obtiene el resultado del comando. La respuesta se puede obtener de diferentes formas, aunque se haya puesto json por defecto.
+5.	Crear una instancia en EC2: se emplea el comando aws ec2 run-instances. Los parámetros se sacan de la interfaz de amazon: el ID de AMI se obtiene al crear una instancia (el de Ubuntu será ami-06878d265978313ca), al elegir un sistema operativo u otro. Count indica la cantidad de instancias que se están creando, el tipo de insancia será t2.micro (ambos valores van por defecto). En la práctica se ha copiado directamente el comando de los apuntes. 
+6.	Durante la creación de la instancia, el parámetro user-data permite pasarle un comando o una lista de comandos o con file un script (como los de bash). Por tanto, permite crear la instancia y preparar LAMP y todo lo que se tenga en estos scripts.
+7.	Creamos un fichero install_nginx.sh con los comandos sudo apt update y sudo apt install -y nginx y, tras esto y en el mismo directorio donde se encuentra este fichero, se lanza el comando aws ec2 run-instances   --image-id ami-050406429a71aaa64 --count 1 --instance-type t2.micro --key-name vockey --security-groups frontend-sg --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=frontend-01}]" --user-data file://install_nginx.sh. Así, se crea una instancia con nginx instalado.
+VARIABLE = $(comando) en bash ejecuta el comando que haya dentro de los paréntesis y los almacena en la variable
+
+
 
  En la carpeta 13.1 está la práctica de AWS CLI (https://josejuansanchez.org/iaw/practica-aws-cli/index.html)
