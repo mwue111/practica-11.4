@@ -153,7 +153,7 @@ AWS CLI es una herramienta que permite gestionar servicios de Amazon Web Service
 7.	Por ejemplo, para ejecutar un script que instale nginx en la instancia creada, se crea un fichero *install_nginx.sh* con los comandos *sudo apt update* y *sudo apt install -y nginx* y, tras esto y en el mismo directorio donde se encuentra este fichero, se lanza el comando *aws ec2 run-instances --image-id ami-050406429a71aaa64 --count 1 --instance-type t2.micro --key-name vockey --security-groups frontend-sg --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=frontend-01}]" **--user-data file://install_nginx.sh***. Así, se crea una instancia con nginx instalado.
 
 ## Ejercicios
-La resolución de los ejercicios se encuentra en el directorio [/practica13.1](#practica13.1).
+La resolución de los ejercicios se encuentra en el directorio [/practica13.1](#https://github.com/mwue111/practica-11.4/tree/main/practica13.1).
 
 **Crear un grupo de seguridad para las máquinas del Backend con el nombre backend-sg. Añada las siguientes reglas al grupo de seguridad:**
   - **Acceso SSH (puerto 22/TCP) desde cualquier dirección IP.**
