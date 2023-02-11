@@ -115,29 +115,104 @@ Se ejecutan los playbooks con los comandos *ansible-playbook -i inventario nombr
 
 AWS CLI es una herramienta que permite gestionar servicios de Amazon Web Services accediendo a la API de AWS desde la línea de comandos. Permite replicar el mismo entorno siempre: igual que se tienen scripts para el software, se tienen scripts para la infraestructura. 
 
-1. Insalar el CLI de amazon
+1. Insalar el CLI de amazon:
+   1. En el servidor de AWS, en la pantalla de inicio, se pueden localizar las credenciales en **AWS Details**. Se copian.
+   
+   2. Amazon tiene documentación relacionada con la instalación o actualización de la versión más reciente de AWS CLI. En ella, se selecciona el SO que se va a utilizar (Linux) y muestra un comando *curl* que es necesario copiar en la consola: *curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" unzip awscliv2.zip sudo ./aws/install*. No es necesario que se esté situada en el directorio de trabajo, ya que el instalador, al lanzarse, se guarda en un directorio prestablecido. Una vez instalado, el código fuente se puede borrar.
 
-#
-*pendiente de terminar*
+   3. Configurar usuario y contraseña: en consola, se da a la opción AWS configure para que salga el asistente de configuración. Los datos que se escriban son irrelevantes. Tras esto, se habrán creado dos archivos: **credentials**, que se cambiará más adelante, y **config**, que permite configurar la región y el formato de salida.
+   
+   4. Para que esto sea seguro, se usan tokens en lugar de poner usuario y contraseña. Se han conseguido en el primer paso, en **AWS Details**. Se trata del token *aws_secret_key_id*, *aws_secret_access_key* y *aws_session_token*. Estas claves tendrán que cambiarse cada vez que se levante el servidor. Para cambiarlas por consola se ejecuta el comando *code /home/usuario/.aws/credentials* y se copian en ese fichero. En el fichero de **credentials** suele haber diferentes tokens para diferentes clientes, [default] es el que se crea pero se podría añadir debajo [proyectoA], [proyectoB], etc.
+   
+   5. Se ejecuta el mismo comando para el archivo config:  *code /home/usuario/.aws/config* y se cambia el contenido: región = us-east-1 y output = json para que los datos los devuelva en formato JSON.
+   
+   6. Para comprobar si ha funcionado, se ejecuta el comando *aws ec2* (ec2 es el servicio) *describe-instances*, en consola tiene que devolver un JSON con las instancias creadas.
 
-   1. Entramos en AWS details y pulsamos show en aws cli
-   2. Instalamos cli en nuestra máquina local. 
-   3. Buscar aws cli en Google.
-   4. Entramos en instalar o actualizar en el primer resultado.
-   5. Coger el de Linux y copiarlo en consola donde está la práctica (no importa dónde se lanza el instalador, porque se instala en otro directorio. El código fuente se queda en la practica 9, se puede borrar).
-iv.	Configurar usuario y contraseña: aws configure para que salga el asistente de configuración. Rellenar todo con bla o con lo que sea y creará dos archivos: uno llamado credentials que cambiaremos más adelante y otro llamado config, que permite configurar región y formato de salida.
-v.	Para que esto sea seguro, se usan tokens en lugar de poner usuario y contraseña. Para conseguirlas, las buscamos en aws cli: ahí obtendremos la aws_secret_key_id, aws_secret_access_key y aws_session_token. Estas claves tendremos que cambiarlas cada vez que levantemos el servidor. Para cambiarlas en el directorio se emplea el comando code /home/usuario/.aws/credentials y allí se copian. En este fichero suele haber diferentes tokens para diferentes clientes, [default] es el que se crea pero se podría añadir debajo [proyectoA], [proyectoB], etc.
-vi.	Lo mismo para el archivo config:  code /home/usuario/-aws/config y se cambia el contenido: región = us-east-1 y output = json.
-vii.	Para comprobar si ha funcionado, ejecutar el comando aws ec2 (ec2 es el servicio) describe-instances y tiene que devolver un json con las instancias creadas.
+2.	Creación de un grupo de seguridad: ejecutar el comando *aws ec2 create-security-group --description <value\> --group-name <value\>*. Para comprobar si se ha creado, se lanza el comando *aws ec2 describe-security-groups*, debe devolver un JSON con la información de todos los grupos de seguridad creados en Amazon. Si sólo queremos la información de un grupo, se ejecuta *aws ec2 describe-security-groups --group-name nombre-del-grupo-de-seguridad*.
 
-2.	Creación de un grupo de seguridad: ejecutar el comando aws ec2 create-security-group --description <value> --group-name <value>. Los grupos de seguridad se empleaban para establecer las reglas de entrada (el tráfico al que se permite la entrada) estableciendo los puertos. Para comprobar si se ha creado, se ejecuta aws ec2 describe-security-groups y debe devolver un json con la información de todos los grupos de seguridad creados en amazon. Si sólo queremos la información de un grupo, se ejecuta aws ec2 describe-security-groups --group-name frontend-sg
-3.	Añadir reglas de entrada al grupo de seguridad: igual que en la interfaz de AWS pero con comando, ejecutando este: aws ec2 authorize-security-group-ingress[--group-id <value>][--group-name <value>][--ip-permissions <value>][--dry-run | --no-dry-run][--tag-specifications <value>][--protocol <value>][--port <value>][--cidr <value>][--source-group <value>][--group-owner <value>][--cli-input-json | --cli-input-yaml][--generate-cli-skeleton <value>]. Hay que ejecutar este comando por cada puerto que se abra (por cada regla de seguridad añadida).
-4.	Eliminar un grupo de seguridad: aws ec2 delete-security-group[--group-id <value>][--group-name <value>][--dry-run | --no-dry-run][--cli-input-json | --cli-input-yaml][--generate-cli-skeleton <value>]. No hay un comando que borre todos los comandos, así que se obtiene mediante in comando un listado con todos los id de todos los grupos y esa información se manda a otro comando. El parámetro query permite obtener ciertos datos dentro de un json: en el ejemplo de los apuntes, cuando pone –query “SecurityGroups[*].GroupId” de todos los elementos de segurityGroups se quiere recoger el id como GroupId. Con –output text se obtiene el resultado del comando. La respuesta se puede obtener de diferentes formas, aunque se haya puesto json por defecto.
-5.	Crear una instancia en EC2: se emplea el comando aws ec2 run-instances. Los parámetros se sacan de la interfaz de amazon: el ID de AMI se obtiene al crear una instancia (el de Ubuntu será ami-06878d265978313ca), al elegir un sistema operativo u otro. Count indica la cantidad de instancias que se están creando, el tipo de insancia será t2.micro (ambos valores van por defecto). En la práctica se ha copiado directamente el comando de los apuntes. 
-6.	Durante la creación de la instancia, el parámetro user-data permite pasarle un comando o una lista de comandos o con file un script (como los de bash). Por tanto, permite crear la instancia y preparar LAMP y todo lo que se tenga en estos scripts.
-7.	Creamos un fichero install_nginx.sh con los comandos sudo apt update y sudo apt install -y nginx y, tras esto y en el mismo directorio donde se encuentra este fichero, se lanza el comando aws ec2 run-instances   --image-id ami-050406429a71aaa64 --count 1 --instance-type t2.micro --key-name vockey --security-groups frontend-sg --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=frontend-01}]" --user-data file://install_nginx.sh. Así, se crea una instancia con nginx instalado.
-VARIABLE = $(comando) en bash ejecuta el comando que haya dentro de los paréntesis y los almacena en la variable
+3.	Añadir reglas de entrada al grupo de seguridad por consola: para ello, se emplea el comando *aws ec2 authorize-security-group-ingress* con una serie de parámetros opcionales, listados abajo. Hay que ejecutar este comando por cada puerto que se abra (por cada regla de seguridad añadida).
+  - *[--group-id id-del-grupo-de-seguridad]*
+  - *[--group-name nombre-del-grupo-de-seguridad]*
+  - *[--ip-permissions \<value>]*
+  - *[--dry-run | --no-dry-run]*
+  - *[--tag-specifications \<value>]*
+  - *[--protocol \<value>]*
+  - *[--port \<value>]*
+  - *[--cidr \<value>]*
+  - *[--source-group \<value>]*
+  - *[--group-owner \<value>]*
+  - *[--cli-input-json | --cli-input-yaml]*
+  - *[--generate-cli-skeleton \<value>]*
+  
+4.	Eliminar un grupo de seguridad: se emplea el comando *aws ec2 delete-security-group[--group-id \<value>][--group-name \<value>][--dry-run | --no-dry-run][--cli-input-json | --cli-input-yaml][--generate-cli-skeleton \<value>]*. No hay un comando que borre todos los grupos de seguridad, así que si se necesita borrar más de uno a la vez se puede hacer ejecutando un comando que recupere todos los ID de los grupos de seguridad y envíe esa información a otro comanado. El parámetro *query* permite obtener ciertos datos dentro de un JSON: por ejemplo, *--query “SecurityGroups[\*].GroupId”* permite obtener el ID como GroupID de todos los elementos de segurityGroups. Se puede especificar cómo se quiere que devuelva los resultados con el parámetro *--output formato-devuelto*, por ejemplo *--output text*.
 
+5.	Crear una instancia en EC2: se emplea el comando *aws ec2 run-instances*. Los parámetros se sacan de la interfaz de amazon: el ID de AMI se obtiene al crear una instancia (el de Ubuntu será ami-06878d265978313ca), al elegir un sistema operativo u otro. *Count* indica la cantidad de instancias que se están creando y el tipo de insancia será t2.micro (ambos valores van por defecto).
 
+6.	Durante la creación de la instancia, el parámetro *user-data* permite pasarle un comando o una lista de comandos o con *file* un script (como los de bash). Por tanto, permite crear la instancia y preparar LAMP y todo lo que se tenga en estos scripts.
 
- En la carpeta 13.1 está la práctica de AWS CLI (https://josejuansanchez.org/iaw/practica-aws-cli/index.html)
+7.	Por ejemplo, para ejecutar un script que instale nginx en la instancia creada, se crea un fichero *install_nginx.sh* con los comandos *sudo apt update* y *sudo apt install -y nginx* y, tras esto y en el mismo directorio donde se encuentra este fichero, se lanza el comando *aws ec2 run-instances --image-id ami-050406429a71aaa64 --count 1 --instance-type t2.micro --key-name vockey --security-groups frontend-sg --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=frontend-01}]" **--user-data file://install_nginx.sh***. Así, se crea una instancia con nginx instalado.
+
+## Ejercicios
+La resolución de los ejercicios se encuentra en el directorio [/practica13.1](#practica13.1).
+
+**Crear un grupo de seguridad para las máquinas del Backend con el nombre backend-sg. Añada las siguientes reglas al grupo de seguridad:**
+  - **Acceso SSH (puerto 22/TCP) desde cualquier dirección IP.**
+  - **Acceso al puerto 3306/TCP desde cualquier dirección IP.**
+
+Para realizar este ejercicio se ejecutó el comando:
+
+*aws ec2 create-security-group \
+    --group-name backend-sg \
+    --description "Reglas para el backend"*
+
+Para agregar las reglas de seguridad:
+
+*aws ec2 authorize-security-group-ingress \
+    --group-name backend-sg \
+    --protocol tcp \
+    --port 22 \
+    --cidr 0.0.0.0/0*
+
+*aws ec2 authorize-security-group-ingress \
+    --group-name backend-sg \
+    --protocol tcp \
+    --port 3306 \
+    --cidr 0.0.0.0/0*
+
+**Crea una instancia EC2 para la máquina del Backend con las siguientes características:**
+  - **Identificador de la AMI: ami-08e637cea2f053dfa.**
+  - **Número de instancias: 1**
+  - **Tipo de instancia: t2.micro**
+  - **Clave privada: vockey**
+  - **Grupo de seguridad: backend-sg**
+  - **Nombre de la instancia: backend**
+Para resolver este ejercicio, se ejecutó el comando 
+*aws ec2 run-instances \
+    --image-id ami-08e637cea2f053dfa \
+    --count 1 \
+    --instance-type t2.micro \
+    --key-name vockey \
+    --security-groups backend-sg \
+    --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$INSTANCE_NAME_BACKEND}]"*
+
+En el fichero del ejercicio 4, todas las características que podían almacenarse en un [fichero de variables externo](#practica13.1/ejercicio4/variables.sh) se han almacenado de esa manera, que es más segura. 
+
+**Crear un script para crear la infraestructura de la práctica 9.**
+
+[Script para crear la infraestructura de la práctica 9.](#practica13.1/create_all.sh)
+
+**Crear un script para eliminar la infraestructura de la práctica 9.**
+
+[Script para eliminar la infraestructura de la práctica 9.](#practica13.1/delete_all.sh)
+
+**Modifique los scripts del repositorio de ejemplo para que utilicen la siguiente AMI:**
+- **Nombre de la AMI: Ubuntu Server 22.04 LTS (HVM).**
+- **Identificador de la AMI: ami-06878d265978313ca.**
+**También tendrá que modificar los scripts para que se ejecute el siguiente comando en las instancias durante el inicio:**
+*$ sudo apt update && sudo apt upgrade -y*
+
+[Fichero modificado.](#practica13.1/ejercicio4/04-create_instances.sh)
+
+**Escriba un script de bash que muestre el nombre de todas instancias EC2 que tiene en ejecución junto a su dirección IP pública.**
+
+[Script que muestra el nombre de las instancias junto a su dirección IP pública.](#practica13.1/ejercicio5.sh)

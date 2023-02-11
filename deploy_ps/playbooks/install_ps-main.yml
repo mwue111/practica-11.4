@@ -137,7 +137,9 @@
       # rm -rf /tmp/fullprestashop.zip
       
     - name: Instalación de PrestaShop usando CLI
-      shell: php /var/www/html/install/index_cli.php --domain="{{ https_variables.domain }}" --db_name= "{{ ps_variables.name }}" --db_user="{{ ps_variables.user }}" --db_password="{{ ps_variables.pass }}" --prefix=myshop_ --email="{{ https_variables.email }}" --password="{{ ps_variables.pass }}" --ssl=1
+      command: php index_cli.php --domain="{{ https_variables.domain }}" --db_name= "{{ ps_variables.name }}" --db_user="{{ ps_variables.user }}" --db_password="{{ ps_variables.pass }}" --prefix=myshop_ --email="{{ https_variables.email }}" --password="{{ ps_variables.pass }}" --ssl=0
+      args:
+        chdir: /var/www/html/install/
 
       # php /var/www/html/install/index_cli.php \
       # --domain="{{ domain }}" \
@@ -162,6 +164,7 @@
         state: directory
         owner: www-data
         group: www-data
+        mode: 0755
         recurse: yes
       # chown -R www-data:www-data /var/www/html pero sólo de /wordpress
 
