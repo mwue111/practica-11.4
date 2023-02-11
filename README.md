@@ -195,15 +195,15 @@ Para resolver este ejercicio, se ejecutó el comando
     --security-groups backend-sg \
     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$INSTANCE_NAME_BACKEND}]"*
 
-En el fichero del ejercicio 4, todas las características que podían almacenarse en un [fichero de variables externo](#practica13.1/ejercicio4/variables.sh) se han almacenado de esa manera, que es más segura. 
+En el fichero del ejercicio 4, todas las características que podían almacenarse en un [fichero de variables externo](https://github.com/mwue111/practica-11.4/blob/main/practica13.1/variables.sh) se han almacenado de esa manera, que es más segura. 
 
 **Crear un script para crear la infraestructura de la práctica 9.**
 
-[Script para crear la infraestructura de la práctica 9.](#practica13.1/create_all.sh)
+[Script para crear la infraestructura de la práctica 9.](https://github.com/mwue111/practica-11.4/blob/main/practica13.1/create_all.sh)
 
 **Crear un script para eliminar la infraestructura de la práctica 9.**
 
-[Script para eliminar la infraestructura de la práctica 9.](#practica13.1/delete_all.sh)
+[Script para eliminar la infraestructura de la práctica 9.](https://github.com/mwue111/practica-11.4/blob/main/practica13.1/delete_all.sh)
 
 **Modifique los scripts del repositorio de ejemplo para que utilicen la siguiente AMI:**
 - **Nombre de la AMI: Ubuntu Server 22.04 LTS (HVM).**
@@ -211,8 +211,8 @@ En el fichero del ejercicio 4, todas las características que podían almacenars
 **También tendrá que modificar los scripts para que se ejecute el siguiente comando en las instancias durante el inicio:**
 *$ sudo apt update && sudo apt upgrade -y*
 
-[Fichero modificado.](#practica13.1/ejercicio4/04-create_instances.sh)
+[Fichero modificado.](https://github.com/mwue111/practica-11.4/blob/main/practica13.1/ejercicio4/04-create_instances.sh)
 
 **Escriba un script de bash que muestre el nombre de todas instancias EC2 que tiene en ejecución junto a su dirección IP pública.**
 
-[Script que muestra el nombre de las instancias junto a su dirección IP pública.](#practica13.1/ejercicio5.sh)
+[Script que muestra el nombre de las instancias junto a su dirección IP pública.](https://github.com/mwue111/practica-11.4/blob/main/practica13.1/ejercicio5.sh)
