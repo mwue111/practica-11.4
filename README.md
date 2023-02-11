@@ -195,7 +195,7 @@ Para resolver este ejercicio, se ejecutó el comando
     --security-groups backend-sg \
     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$INSTANCE_NAME_BACKEND}]"*
 
-En el fichero del ejercicio 4, todas las características que podían almacenarse en un [fichero de variables externo](#practica13.1/ejercicio4/variables.sh) se han almacenado de esa manera, que es más segura. 
+En el fichero del ejercicio 4, todas las características que podían almacenarse en un [fichero de variables externo](#practica13.1\ejercicio4\variables.sh) se han almacenado de esa manera, que es más segura. 
 
 **Crear un script para crear la infraestructura de la práctica 9.**
 
