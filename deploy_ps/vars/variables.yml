@@ -8,3 +8,7 @@ ps_variables:
 https_variables: 
   email: nombre@email.com
   domain: 3.210.102.158 #ansible-01
+
+admin:
+  email: nombre@email.com
+  pass: admin_pass

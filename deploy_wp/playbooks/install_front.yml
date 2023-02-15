@@ -38,6 +38,12 @@
         # remote_src: yes
       # cp ../conf/000-default.conf /etc/apache2/sites-available/000-default.conf
 
+    - name: Habilitar el módulo rewrite de Apache
+      apache2_module:
+        name: rewrite
+        state: present
+      # a2enmod rewrite
+
     - name: Reinicio del servicio Apache
       service:
         name: apache2

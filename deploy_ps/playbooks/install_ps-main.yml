@@ -24,19 +24,19 @@
         name: mysql-server
         state: present
     
-    - name: Creación de la base de datos
-      mysql_db: 
-        name: "{{ ps_variables.name }}"
-        state: present
-        login_unix_socket: /var/run/mysqld/mysqld.sock
-    
     - name: Creación de un usuario
-      no_log: true
+      no_log: false
       mysql_user: 
         name: "{{ ps_variables.user }}"
         password: "{{ ps_variables.pass }}"
         priv: "{{ ps_variables.name }}.*:ALL"
         # host: "%" # sólo cuando hay una máquina para front y otra para back
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Creación de la base de datos
+      mysql_db: 
+        name: "{{ ps_variables.name }}"
         state: present
         login_unix_socket: /var/run/mysqld/mysqld.sock
         
@@ -54,6 +54,8 @@
         replace: "post_max_size = 128M"
       #sed -i "s/post_max_size = 8M/post_max_size = 128M/" /etc/php/8.1/apache2/php.ini
     
+    # - name: Activación del módulo rewrite 
+
     - name: Instalación de las extensiones requeridas para PrestaShop
       apt:
         name:
@@ -72,6 +74,23 @@
         path: /var/www/html
         state: absent
       # rm -rf /var/www/html/¿.*?
+
+    - name: Instalación de PhPPSInfo para comprobar el entorno
+      get_url:
+        url: https://github.com/PrestaShop/php-ps-info/archive/refs/tags/v1.1.zip
+        dest: /tmp/phppsinfo.zip
+
+    - name: Descomprimimos phppsinfo.zip en /tmp/
+      unarchive: 
+        src: /tmp/phppsinfo.zip
+        dest: /tmp/
+        remote_src: yes
+
+    - name: Movemos el código fuente de phppsinfo a /var/www/html
+      copy:
+        src: /tmp/php-ps-info-1.1/phppsinfo.php
+        dest: /var/www/html
+        remote_src: yes
     
     - name: Descarga de PrestaShop
       get_url:
@@ -119,25 +138,33 @@
     - name: Descomprimir el segundo archivo de PrestaShop
       unarchive:
         src: /tmp/prestashop-borrar/prestashop.zip
-        dest: /tmp/prestashop
+        dest: /tmp/prestashop/
         remote_src: yes
       # unzip /tmp/prestashop-borrar/prestashop.zip -d /var/www/html
     
     - name: Mover la carpeta prestahop a /var/www/html
       copy:
-        src: /tmp/prestashop
+        src: /tmp/prestashop/
         dest: /var/www/html
+        #recurse: yes
         remote_src: yes
-      # cp /tmp/prestashop /var/www/html/
+      # cp /tmp/prestashop/ /var/www/html/
 
     - name: Borrado de la carpeta creada al descomprimir el fichero
       file:
         path: /tmp/fullprestashop.zip
         state: absent
       # rm -rf /tmp/fullprestashop.zip
+
+    - name: Mover los ficheros desde dentro de /var/www/html/prestashop a /var/www/html
+      copy:
+        src: /var/www/html/prestashop/
+        dest: /var/www/html
+        remote_src: yes
       
     - name: Instalación de PrestaShop usando CLI
-      command: php index_cli.php --domain="{{ https_variables.domain }}" --db_name= "{{ ps_variables.name }}" --db_user="{{ ps_variables.user }}" --db_password="{{ ps_variables.pass }}" --prefix=myshop_ --email="{{ https_variables.email }}" --password="{{ ps_variables.pass }}" --ssl=0
+      command: 
+        php index_cli.php --domain="{{ https_variables.domain }}" --db_name= "{{ ps_variables.name }}" --db_user="{{ ps_variables.user }}" --db_password="{{ ps_variables.pass }}" --prefix=myshop_ --email="{{ admin.email }}" --password="{{ admin.pass }}" --ssl=0
       args:
         chdir: /var/www/html/install/
 
