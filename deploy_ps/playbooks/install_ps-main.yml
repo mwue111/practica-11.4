@@ -1,14 +1,41 @@
-# scripts de bash pasados a playbook
----
+--- # scripts de bash pasados a playbook
 - name: Playbook para instalar PrestaShop como página principal
   hosts: aws
   become: yes
 
   vars_files:
     - ../vars/variables.yml
-  
-  tasks:
 
+  tasks:
+    - name: Actualizar los repositorios
+      apt:
+        update_cache: yes
+      # apt update
+
+    - name: Instalación de Apache
+      apt:
+        name: apache2
+        update_cache: yes
+        state: present
+
+    - name: Instalación de PHP y los módulos necesarios
+      apt:
+        name:
+          - php
+          - libapache2-mod-php
+          - php-mysql
+        update_cache: yes   
+
+    - name: Copiar el archivo de configuración
+      copy: 
+        src: ../conf/000-default.conf
+        dest: /etc/apache2/sites-available/000-default.conf 
+
+    - name: Reiniciar apache
+      service:
+        name: apache2
+        state: restarted
+    
     - name: Instalación del gestor de paquetes de Python pip3
       apt:
         name: python3-pip
@@ -18,43 +45,91 @@
       pip:
         name: pymysql
         state: present
-    
+
     - name: Instalación del sistema gestor de la base de datos
       apt:
         name: mysql-server
         state: present
-    
+
     - name: Creación de un usuario
       no_log: false
       mysql_user: 
-        name: "{{ ps_variables.user }}"
-        password: "{{ ps_variables.pass }}"
-        priv: "{{ ps_variables.name }}.*:ALL"
+          name: "{{ ps_variables.user }}"
+          password: "{{ ps_variables.pass }}"
+          priv: "{{ ps_variables.name }}.*:ALL"
         # host: "%" # sólo cuando hay una máquina para front y otra para back
-        state: present
-        login_unix_socket: /var/run/mysqld/mysqld.sock
+          state: present
+          login_unix_socket: /var/run/mysqld/mysqld.sock
 
+      
     - name: Creación de la base de datos
       mysql_db: 
         name: "{{ ps_variables.name }}"
         state: present
+        login_user: "{{ ps_variables.user }}"
+        login_password: "{{ ps_variables.pass }}"
         login_unix_socket: /var/run/mysqld/mysqld.sock
-        
-    - name: Cambiar el fichero php.ini para aumentar el tamaño de subida
-      replace:
-        path: /etc/php/8.1/apache2/php.ini
-        regexp: "upload_max_filesize = 2M"
-        replace: "upload_max_filesize = 128M"
-      # sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 128M/" /etc/php/8.1/apache2/php.ini
+
+    - name: Instalar la herramienta unzip
+      apt:
+        name: unzip
+        state: present
+      # apt install unzip -y
     
-    - name: Cambiar el fichero php.ini para aumentar el tamaño de subida
-      replace:
-        path: /etc/php/8.1/apache2/php.ini
-        regexp: "post_max_size = 8M"
-        replace: "post_max_size = 128M"
-      #sed -i "s/post_max_size = 8M/post_max_size = 128M/" /etc/php/8.1/apache2/php.ini
+    - name: Descarga de PrestaShop
+      get_url:
+        url: https://github.com/PrestaShop/PrestaShop/releases/download/8.0.0/prestashop_8.0.0.zip
+        dest: /tmp/fullprestashop.zip
+      # wget https://github.com/PrestaShop/PrestaShop/releases/download/8.0.0/prestashop_8.0.0.zip --output-document /tmp/fullprestashop.zip
     
-    # - name: Activación del módulo rewrite 
+    - name: Instalación de PhPPSInfo para comprobar el entorno
+      get_url:
+        url: https://github.com/PrestaShop/php-ps-info/archive/refs/tags/v1.1.zip
+        dest: /tmp/phppsinfo.zip
+
+    - name: Descomprimir el archivo de fullrestaShop.zip en /tmp/
+      unarchive:
+        src: /tmp/fullprestashop.zip
+        dest: /tmp/
+        remote_src: yes
+      # unzip /tmp/fullprestashop.zip -d /tmp/prestashop-borrar
+    
+    - name: Descomprimimos phppsinfo.zip en /tmp/
+      unarchive: 
+        src: /tmp/phppsinfo.zip
+        dest: /tmp/
+        remote_src: yes
+
+    - name: Crear la carpeta prestashop
+      file:
+        path: /tmp/prestashop/
+        state: directory
+        remote_src: yes
+    
+    - name: Descomprimir el segundo archivo de PrestaShop
+      unarchive:
+        src: /tmp/prestashop.zip
+        dest: /tmp/prestashop
+        remote_src: yes
+      # unzip /tmp/prestashop-borrar/prestashop.zip -d /var/www/html
+
+    - name: Borrar instalaciones anteriores
+      file:
+        path: /var/www/html/
+        state: absent
+      # rm -rf /var/www/html/¿.*?
+
+    - name: Mover el código fuente de PrestaShop a /var/www/html
+      copy:
+        src: /tmp/prestashop/
+        dest: /var/www/html
+        remote_src: yes
+    
+    - name: Movemos el código fuente de phppsinfo a /var/www/html
+      copy:
+        src: /tmp/php-ps-info-1.1/phppsinfo.php
+        dest: /var/www/html
+        remote_src: yes
 
     - name: Instalación de las extensiones requeridas para PrestaShop
       apt:
@@ -68,103 +143,44 @@
           - php-zip
         update_cache: yes
         # apt install ... -y
+
+    - name: Cambiar el fichero php.ini para aumentar el tamaño de subida
+      replace:
+        path: /etc/php/8.1/apache2/php.ini
+        regexp: "upload_max_filesize = 2M"
+        replace: "upload_max_filesize = 128M"
+      # sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 128M/" /etc/php/8.1/apache2/php.ini
     
-    - name: Borrar instalaciones anteriores
+    - name: Cambiar el fichero php.ini para aumentar el tamaño de subida
+      replace:
+        path: /etc/php/8.1/apache2/php.ini
+        regexp: "post_max_size = 8M"
+        replace: "post_max_size = 128M"
+      #sed -i "s/post_max_size = 8M/post_max_size = 128M/" /etc/php/8.1/apache2/php.ini
+
+    - name: Habilitar el módulo rewrite de Apache
+      apache2_module:
+        name: rewrite
+        state: present
+      # a2enmod rewrite
+
+    - name: Reiniciar el servidor Apache
+      service: 
+        name: apache2
+        state: restarted
+
+    - name: Cambiar el propietario y el grupo del directorio
       file:
         path: /var/www/html
-        state: absent
-      # rm -rf /var/www/html/¿.*?
-
-    - name: Instalación de PhPPSInfo para comprobar el entorno
-      get_url:
-        url: https://github.com/PrestaShop/php-ps-info/archive/refs/tags/v1.1.zip
-        dest: /tmp/phppsinfo.zip
-
-    - name: Descomprimimos phppsinfo.zip en /tmp/
-      unarchive: 
-        src: /tmp/phppsinfo.zip
-        dest: /tmp/
-        remote_src: yes
-
-    - name: Movemos el código fuente de phppsinfo a /var/www/html
-      copy:
-        src: /tmp/php-ps-info-1.1/phppsinfo.php
-        dest: /var/www/html
-        remote_src: yes
-    
-    - name: Descarga de PrestaShop
-      get_url:
-        url: https://github.com/PrestaShop/PrestaShop/releases/download/8.0.0/prestashop_8.0.0.zip
-        dest: /tmp/fullprestashop.zip
-      # wget https://github.com/PrestaShop/PrestaShop/releases/download/8.0.0/prestashop_8.0.0.zip --output-document /tmp/fullprestashop.zip
-    
-    - name: Actualización de repositorios
-      apt:
-        update_cache: yes
-      # apt update
-  
-    - name: Instalar la herramienta unzip
-      apt:
-        name: unzip
-        state: present
-      # apt install unzip -y
-    
-    - name: Eliminar instalaciones previas
-      file:
-        path: /tmp/prestashop-borrar
-        state: absent
-      # rm -rf /tmp/prestashop-borrar
-    
-    - name: Crear la carpeta prestashop-borrar
-      file:
-        path: /tmp/prestashop-borrar
         state: directory
-        remote_src: yes
-
-    - name: Descomprimir el archivo de PrestaShop
-      unarchive:
-        src: /tmp/fullprestashop.zip
-        dest: /tmp/prestashop-borrar
-        remote_src: yes
-      # unzip /tmp/fullprestashop.zip -d /tmp/prestashop-borrar
+        owner: www-data
+        group: www-data
+        mode: 0755 # opcional
+        recurse: yes
+      # chown -R www-data:www-data /var/www/html pero sólo de /wordpress
     
-    # crear otra carpeta y moverla a tmp
-    - name: Crear la carpeta prestashop
-      file:
-        path: /tmp/prestashop
-        state: directory
-        remote_src: yes
-    
-    - name: Descomprimir el segundo archivo de PrestaShop
-      unarchive:
-        src: /tmp/prestashop-borrar/prestashop.zip
-        dest: /tmp/prestashop/
-        remote_src: yes
-      # unzip /tmp/prestashop-borrar/prestashop.zip -d /var/www/html
-    
-    - name: Mover la carpeta prestahop a /var/www/html
-      copy:
-        src: /tmp/prestashop/
-        dest: /var/www/html
-        #recurse: yes
-        remote_src: yes
-      # cp /tmp/prestashop/ /var/www/html/
-
-    - name: Borrado de la carpeta creada al descomprimir el fichero
-      file:
-        path: /tmp/fullprestashop.zip
-        state: absent
-      # rm -rf /tmp/fullprestashop.zip
-
-    - name: Mover los ficheros desde dentro de /var/www/html/prestashop a /var/www/html
-      copy:
-        src: /var/www/html/prestashop/
-        dest: /var/www/html
-        remote_src: yes
-      
-    - name: Instalación de PrestaShop usando CLI
-      command: 
-        php index_cli.php --domain="{{ https_variables.domain }}" --db_name= "{{ ps_variables.name }}" --db_user="{{ ps_variables.user }}" --db_password="{{ ps_variables.pass }}" --prefix=myshop_ --email="{{ admin.email }}" --password="{{ admin.pass }}" --ssl=0
+    - name: Ejecutamos el comando de instalación de Prestashop
+      command: php index_cli.php  --domain={{https_variables.domain}} --db_name={{ps_variables.name}} --db_user={{ps_variables.user}} --db_password={{ps_variables.pass}}  --prefix=myshop_ --email={{admin.email}} --password={{admin.pass}} --ssl=0
       args:
         chdir: /var/www/html/install/
 
@@ -179,23 +195,38 @@
       # --password="{{ ps_db_pass }}" \
       # --ssl=1
 
-    - name: Borrado de la carpeta install para que PrestaShop no dé errores
+    - name: Eliminar instalaciones previas I 
+      file:
+        path: /tmp/fullprestashop
+        state: absent
+      # rm -rf /tmp/fullprestashop
+
+    - name: Eliminar instalaciones previas II
+      file:
+        path: /tmp/fullprestashop.zip
+        state: absent
+      # rm -rf /tmp/fullprestashop.zip
+    
+    - name: Eliminar instalaciones previas III
+      file:
+        path: /tmp/prestashop
+        state: absent
+      # rm -rf /tmp/prestashop
+
+    - name: Eliminar instalaciones previas IV
+      file:
+        path: /tmp/phppsinfo
+        state: absent
+      # rm -rf /tmp/phppsinfo
+    
+    - name: Eliminar instalaciones previas V
+      file:
+        path: /tmp/phppsinfo.zip
+        state: absent
+      # rm -rf /tmp/phppsinfo.zip
+
+    - name: Borrado de la carpeta install para poder acceder al admin 
       file:
         path: /var/www/html/install
         state: absent
       # rm -rf /var/www/html/install
-    
-    - name: Cambiar el propietario y el grupo del directorio
-      file:
-        path: /var/www/html
-        state: directory
-        owner: www-data
-        group: www-data
-        mode: 0755
-        recurse: yes
-      # chown -R www-data:www-data /var/www/html pero sólo de /wordpress
-
-    - name: Reiniciar el servidor Apache
-      service: 
-        name: apache2
-        state: restarted
