@@ -7,7 +7,7 @@ ps_variables:
 
 https_variables: 
   email: nombre@email.com
-  domain: 3.210.102.158 #ansible-01
+  domain: mdwprestashop.hopto.org #3.210.102.158 #ansible-01 #mdwprestashop.hopto.org
 
 admin:
   email: nombre@email.com
