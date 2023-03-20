@@ -29,17 +29,17 @@
         name: pymysql
         state: present
 
-    - name: Instalación del sistema gestor de la base de datos
-      apt:
-        name: mysql-server
-        state: present
+    # - name: Instalación del sistema gestor de la base de datos
+    #   apt:
+    #     name: mysql-server
+    #     state: present
       # apt install mysql-server -y
 
     - name: Configuración de MySQL para poder conectar con el frontend
       replace:
         path: /etc/mysql/mysql.conf.d/mysqld.cnf
-        regexp: 127.0.0.0
-        replace: 0.0.0.0
+        regexp: "127.0.0.1"
+        replace: "{{ wordpress.db_server }}"
       # sed -i "s/127.0.0.1/0.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf
     
     - name: Reiniciar MySQL
@@ -57,7 +57,6 @@
       # mysql -u root <<< "CREATE DATABASE IF NOT EXISTS $DB_NAME;"
 
     - name: Crear un usuario
-      no_log: true
       mysql_user:
         name: "{{ wp_variables.user }}"
         password: "{{ wp_variables.pass }}"

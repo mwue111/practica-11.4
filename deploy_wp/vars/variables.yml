@@ -2,9 +2,23 @@ wp_variables:
   name: db_name # nombre de la bd
   user: db_user
   pass: db_pass
-  back: 172.31.60.126
-  # IP privada del back
+  
+wordpress:
+  language: es
+  name: DAW
+  country: es
+  ssl: 1
+  firstname: Daniela
+  lastname: Wuerich
+  email: mwue111@g.educaand.es
+  password: p4SSw0rd123456
+  db_server: 172.31.60.126
+  domain: mdwprestashop.hopto.org
 
-https_variables: 
-  email: nombre@email.com
-  domain: 3.210.102.158 
+certbot: 
+  email: ejemplo@email.es
+
+phpmyadmin: 
+  user: pma_user
+  password: pma_password
+  db_name: db_name

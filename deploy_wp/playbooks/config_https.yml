@@ -9,6 +9,12 @@
 
   tasks: 
 
+    - name: Borrado de instalaciones previas de CertBot
+      apt:
+        name: certbot
+        state: absent
+      # apt-get remove certbot -y
+
     - name: Instalación del core de snapd
       shell: snap install core
       # snap install core
@@ -17,19 +23,22 @@
       shell: snap refresh core
       # snap refresh core
 
-    - name: Borrado de instalaciones previas de CertBot
-      shell: apt-get remove certbot -y
-      # apt-get remove certbot -y
-
     - name: Instalación de CertBot con snapd
       shell: snap install --classic certbot
       # snap install --clasic certbot
 
     # no hace falta
-    # - name: Creación de enlace entre el directorio donde se descarga CertBot y usr/bin/certbot
+    - name: Creación de enlace entre el directorio donde se descarga CertBot y usr/bin/certbot
+      command: ln -s -f /snap/bin/certbot /usr/bin/certbot
       # ln -s /snap/bin/certbot /usr/bin/certbot
 
     - name: Solicitud del certificado y configuración del servidor
-      shell: certbot --apache -m "{{ https_variables.email }}" --agree-tos --no-eff-email -d "{{ https_variables.domain }}" --non-interactive
+      command: 
+        certbot --apache \
+        -m "{{ certbot.email }}" \
+        --agree-tos \
+        --no-eff-email \
+        --non-interactive \
+        -d "{{ wordpress.domain  }}"
       # certbot --apache -m "email" --agree-tos --no-eff-email -d "dominio" --no (o non)-interactive
       # este con shell

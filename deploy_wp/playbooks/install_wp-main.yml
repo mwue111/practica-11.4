@@ -32,16 +32,10 @@
         state: absent
       # rm -rf /tmp/wordpress 
 
-    - name: Crear la carpeta wordpress
-      file:
-        path: /tmp/wordpress
-        state: directory
-        remote_src: yes
-
     - name: Descomprimir el archivo de WordPress
       unarchive:
         src: /tmp/wordpress.zip
-        dest: /tmp/wordpress
+        dest: /tmp/
         remote_src: yes
       # unzip /tmp/wordpress.zip -d /tmp
 
@@ -51,12 +45,6 @@
         dest: /var/www/html
         remote_src: yes
       # mv /tmp/wordpress/* /var/www/html
-
-    - name: Eliminar el archivo wordpress.zip
-      file:
-        path: /tmp/wordpress.zip
-        state: absent
-      # rm -rf /tmp/wordpress.zip
 
     - name: Localizar y renombrar archivos de configuración
       copy:
@@ -91,8 +79,20 @@
       replace:
         path: /var/www/html/wp-config.php
         regexp: "localhost"
-        replace: "{{ wp_variables.back }}"
+        replace: "{{ wordpress.db_server }}"
     
+    - name: Eliminar el archivo wordpress.zip
+      file:
+        path: /tmp/wordpress.zip
+        state: absent
+      # rm -rf /tmp/wordpress.zip
+    
+    - name: Eliminar la carpeta wordpress
+      file:
+        path: /tmp/wordpress
+        state: absent
+      # rm -rf /tmp/wordpress.zip
+
     - name: Eliminar el archivo index.html
       file:
         path: /var/www/html/index.html
