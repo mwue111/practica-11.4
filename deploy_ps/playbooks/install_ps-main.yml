@@ -180,7 +180,7 @@
       # chown -R www-data:www-data /var/www/html pero sólo de /wordpress
     
     - name: Ejecutamos el comando de instalación de Prestashop
-      command: php index_cli.php  --domain={{https_variables.domain}} --db_name={{ps_variables.name}} --db_user={{ps_variables.user}} --db_password={{ps_variables.pass}}  --prefix=myshop_ --email={{admin.email}} --password={{admin.pass}} --ssl=0
+      command: php index_cli.php  --domain={{https_variables.domain}} --db_name={{ps_variables.name}} --db_user={{ps_variables.user}} --db_password={{ps_variables.pass}}  --prefix=myshop_ --email={{admin.email}} --password={{admin.pass}} --ssl=1
       args:
         chdir: /var/www/html/install/
 
